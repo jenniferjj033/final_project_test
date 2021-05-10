@@ -13,7 +13,6 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.SwingConstants;
 
-import Style.*;
 
 public class HomePanel extends JPanel {
 	private JLabel imgLabel;
