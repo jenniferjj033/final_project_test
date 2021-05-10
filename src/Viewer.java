@@ -11,16 +11,16 @@ import javax.swing.JPanel;
 public class Viewer {
 	
 	public static void main(String[] args) {
-		
+		/*
 		JFrame frame = new JFrame();
 		//HomePanel homePanel = new HomePanel();
 		QuestionPanel questionPanel = new QuestionPanel();
-		QToolPanel qToolPanel = new QToolPanel(questionPanel); 
+		//QToolPanel qToolPanel = new QToolPanel(questionPanel); 
 		frame.add(questionPanel);
 		frame.setTitle("Test");
 		frame.setExtendedState(JFrame.MAXIMIZED_BOTH); 
 		frame.setVisible(true);
-		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);*/
 		
 		
 		//jolin
@@ -45,14 +45,14 @@ public class Viewer {
 		
 		
 		//meg
-		/*JFrame frame = new JFrame();
+			JFrame frame = new JFrame();
 		  CardLayout cardLayout = new CardLayout();
 		  JPanel panel = new JPanel(cardLayout);
 		  
 		  SignUpPanel signUp = new SignUpPanel();
 		  LoginPanel login = new LoginPanel();
 		  HomePanel homePanel = new HomePanel();
-		  //QuestionPanel questionPanel = new QuestionPanel(panel);
+		  QuestionPanel questionPanel = new QuestionPanel(panel);
 		  //QToolPanel qToolPanel = new QToolPanel(questionPanel);
 		  
 		  panel.add(login, "1");
@@ -86,13 +86,13 @@ public class Viewer {
 		  menu.add(Signup);
 		  mb.add(menu);
 		  
-		  frame.add(login);
+		  frame.add(questionPanel);
 		  frame.setJMenuBar(mb);
 		  frame.setTitle("Test");
 		  frame.setSize(800, 500);
 		  frame.setExtendedState(JFrame.MAXIMIZED_BOTH);
 		  frame.setVisible(true);
-		  frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);*/
+		  frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		
 		
 		
@@ -154,4 +154,5 @@ public class Viewer {
 		
 		
 	}
+	
 }
