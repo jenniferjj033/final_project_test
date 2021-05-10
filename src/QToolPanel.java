@@ -13,7 +13,7 @@ import java.sql.Statement;
 import javax.swing.JButton;
 import javax.swing.JPanel;
 
-import Style.*;
+import style.*;
 
 public class QToolPanel extends JPanel {
 	private JButton[] buttons;
@@ -68,39 +68,38 @@ public class QToolPanel extends JPanel {
 				buttonPanel.add(buttons[i]);
 			}
 
-			
-				setLayout(new GridBagLayout());
-				setBackground(Color.decode("#F8EFD4"));
-				GridBagConstraints gbc = new GridBagConstraints();
-				gbc.gridx = 0;
-				gbc.gridy = 0;
-				gbc.weightx = 1.0;
-				gbc.weighty = 1.0;
-				gbc.insets = new Insets(10, 0, 20, 0);
-				gbc.fill = GridBagConstraints.HORIZONTAL;
-				gbc.anchor = GridBagConstraints.NORTH;
-				add(qToolUpPanel, gbc);
+			setLayout(new GridBagLayout());
+			setBackground(Color.decode("#F8EFD4"));
+			GridBagConstraints gbc = new GridBagConstraints();
+			gbc.gridx = 0;
+			gbc.gridy = 0;
+			gbc.weightx = 1.0;
+			gbc.weighty = 1.0;
+			gbc.insets = new Insets(10, 0, 20, 0);
+			gbc.fill = GridBagConstraints.HORIZONTAL;
+			gbc.anchor = GridBagConstraints.NORTH;
+			add(qToolUpPanel, gbc);
 
-				gbc = new GridBagConstraints();
-				gbc.gridx = 0;
-				gbc.gridy = 1;
-				gbc.weightx = 1.0;
-				gbc.weighty = 1.0;
-				gbc.ipadx = 320;
-				gbc.ipady = 160;
-				gbc.anchor = GridBagConstraints.CENTER;
-				add(buttonPanel, gbc);
+			gbc = new GridBagConstraints();
+			gbc.gridx = 0;
+			gbc.gridy = 1;
+			gbc.weightx = 1.0;
+			gbc.weighty = 1.0;
+			gbc.ipadx = 320;
+			gbc.ipady = 160;
+			gbc.anchor = GridBagConstraints.CENTER;
+			add(buttonPanel, gbc);
 
-				gbc = new GridBagConstraints();
-				gbc.gridx = 0;
-				gbc.gridy = 2;
-				gbc.weightx = 1.0;
-				gbc.weighty = 1.0;
-				gbc.insets = new Insets(20, 0, 10, 0);
-				gbc.fill = GridBagConstraints.HORIZONTAL;
-				gbc.anchor = GridBagConstraints.SOUTH;
-				add(finishButton, gbc);
-			
+			gbc = new GridBagConstraints();
+			gbc.gridx = 0;
+			gbc.gridy = 2;
+			gbc.weightx = 1.0;
+			gbc.weighty = 1.0;
+			gbc.insets = new Insets(20, 0, 10, 0);
+			gbc.fill = GridBagConstraints.HORIZONTAL;
+			gbc.anchor = GridBagConstraints.SOUTH;
+			add(finishButton, gbc);
+
 		} catch (SQLException e) {
 			System.out.println(e.getMessage());
 		}

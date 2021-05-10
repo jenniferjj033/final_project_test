@@ -26,7 +26,7 @@ import javax.swing.JTextArea;
 import javax.swing.SwingConstants;
 import javax.swing.border.LineBorder;
 
-import Style.*;
+import style.*;
 
 public class QuestionPanel extends JPanel {
 	static final long startTime = System.currentTimeMillis();
@@ -57,7 +57,7 @@ public class QuestionPanel extends JPanel {
 	public QuestionPanel(JPanel panel) {
 		change = false;
 		this.panel = panel;
-		
+
 		createComp();
 		createMoreButton();
 		createPlayButton();
@@ -78,7 +78,7 @@ public class QuestionPanel extends JPanel {
 	public JButton getFinishButton() {
 		return this.finishButton;
 	}
-	
+
 	public boolean getChange() {
 		return this.change;
 	}
@@ -134,9 +134,10 @@ public class QuestionPanel extends JPanel {
 		CardLayout cardLayout = (CardLayout) (panel.getLayout());
 		class ClickListener implements ActionListener {
 			int click = 0;
+
 			public void actionPerformed(ActionEvent e) {
 				click++;
-				if(click % 2 == 0) {
+				if (click % 2 == 0) {
 					change = false;
 					JOptionPane.showMessageDialog(null, "more");
 					cardLayout.show(panel, "3");
@@ -197,7 +198,7 @@ public class QuestionPanel extends JPanel {
 				remove(answerPanel);
 				remove(qToolDownPanel);
 				number--;
-				
+
 				createAnswerButtons();
 				add(qToolDownPanel);
 			}
@@ -236,7 +237,7 @@ public class QuestionPanel extends JPanel {
 				remove(answerPanel);
 				remove(qToolDownPanel);
 				number++;
-				
+
 				createAnswerButtons();
 				add(qToolDownPanel);
 			}
@@ -283,64 +284,75 @@ public class QuestionPanel extends JPanel {
 			Statement statC = conn.createStatement();
 			Statement statD = conn.createStatement();
 			Statement statQ = conn.createStatement();
-			
-			String queryA =  "SELECT A FROM Society WHERE Number = "+number;
+
+			String queryA = "SELECT A FROM Society WHERE Number = " + number;
 			statA.execute(queryA);
 			ResultSet resultA = statA.getResultSet();
 			resultA.next();
-			
-			String queryB =  "SELECT B FROM Society WHERE Number = "+number;
+
+			String queryB = "SELECT B FROM Society WHERE Number = " + number;
 			statB.execute(queryB);
 			ResultSet resultB = statB.getResultSet();
 			resultB.next();
-			
-			String queryC =  "SELECT C FROM Society WHERE Number = "+number;
+
+			String queryC = "SELECT C FROM Society WHERE Number = " + number;
 			statC.execute(queryC);
 			ResultSet resultC = statC.getResultSet();
 			resultC.next();
-			
-			String queryD =  "SELECT D FROM Society WHERE Number = "+number;
+
+			String queryD = "SELECT D FROM Society WHERE Number = " + number;
 			statD.execute(queryD);
 			ResultSet resultD = statD.getResultSet();
 			resultD.next();
 
-			
 			answerButtons = new ArrayList<JButton>();
 			aButton = new JButton(resultA.getString(1));
 			bButton = new JButton(resultB.getString(1));
 			cButton = new JButton(resultC.getString(1));
 			dButton = new JButton(resultD.getString(1));
-			
+
 			answerButtons.add(aButton);
 			answerButtons.add(bButton);
 			answerButtons.add(cButton);
 			answerButtons.add(dButton);
-			
-			answerPanel = new JPanel(new GridLayout(4, 3));
+
+			answerPanel = new JPanel(new GridBagLayout());
+			answerPanel.setBackground(Color.decode("#F8EFD4"));
+			GridBagConstraints gbc;
 			for (int i = 0; i < 4; i++) {
-				answerPanel.add(answerLabel[i]);
-				answerPanel.add(answerButtons.get(i));
-				answerPanel.add(xButtons[i]);
+				gbc = new GridBagConstraints();
+				gbc.gridx = 0;
+				gbc.gridy = i;
+				gbc.weightx = 1.0;
+				gbc.weighty = 1.0;
+				answerPanel.add(answerLabel[i], gbc);
+
+				gbc = new GridBagConstraints();
+				gbc.gridx = 1;
+				gbc.gridy = i;
+				gbc.weightx = 1.0;
+				gbc.weighty = 1.0;
+				gbc.ipadx = 660;
+				gbc.fill = GridBagConstraints.BOTH;
+				answerPanel.add(answerButtons.get(i), gbc);
+
+				gbc = new GridBagConstraints();
+				gbc.gridx = 2;
+				gbc.gridy = i;
+				gbc.weightx = 1.0;
+				gbc.weighty = 1.0;
+				answerPanel.add(xButtons[i], gbc);
 			}
-			add(answerPanel);
-			
-			String Question =  "SELECT Question FROM Society WHERE Number = "+number;
+
+			String Question = "SELECT Question FROM Society WHERE Number = " + number;
 			statQ.execute(Question);
 			ResultSet resultQ = statQ.getResultSet();
 			resultQ.next();
-			
+
 			questionArea.setText(resultQ.getString(1));
 			class ClickListener implements ActionListener {
 				public void actionPerformed(ActionEvent e) {
-					for (JButton b : answerButtons) {
-						if (b.isEnabled()) {
-							b.setBorder(new LineBorder(Color.gray));
-							return;
-						} else {
-							b.setBorder(null);
-							return;
-						}
-					}
+					
 				}
 			}
 			ClickListener listener = new ClickListener();
@@ -350,10 +362,9 @@ public class QuestionPanel extends JPanel {
 				b.setBorder(null);
 				b.addActionListener(listener);
 			}
-			}
-			catch(Exception e) {
-				
-			}
+		} catch (Exception e) {
+
+		}
 	}
 
 	public void createPanel() {

@@ -1,4 +1,4 @@
-package Style;
+package style;
 
 import java.awt.*;
 import java.awt.geom.*;

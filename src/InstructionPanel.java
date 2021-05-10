@@ -44,7 +44,7 @@ public class InstructionPanel extends JPanel {
 		setLayout(new BorderLayout());
 		add(titlePanel, BorderLayout.NORTH);
 		add(noticePanel, BorderLayout.CENTER);
-		add(startButton,BorderLayout.SOUTH);
+		add(startButton, BorderLayout.SOUTH);
 
 	}
 }
