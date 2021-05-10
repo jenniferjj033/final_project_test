@@ -343,7 +343,9 @@ public class QuestionPanel extends JPanel {
 				gbc.weighty = 1.0;
 				answerPanel.add(xButtons[i], gbc);
 			}
+			add(answerPanel);
 
+			
 			String Question = "SELECT Question FROM Society WHERE Number = " + number;
 			statQ.execute(Question);
 			ResultSet resultQ = statQ.getResultSet();
