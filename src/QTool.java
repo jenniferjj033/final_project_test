@@ -4,12 +4,15 @@ import java.awt.Dimension;
 import java.awt.Image;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.SwingConstants;
 
@@ -99,8 +102,26 @@ public class QTool {
 		timeLabel.setIcon(timerIcon);
 		timeLabel.setVerticalTextPosition(SwingConstants.CENTER);
 		timeLabel.setHorizontalTextPosition(SwingConstants.RIGHT);
-		timeLabel.setText("000:00");
-		// timeLabel update time
+
+		Timer timer;
+		int delay = 1000;
+		int period = 1000;
+		timer = new Timer();
+		
+		timer.scheduleAtFixedRate(new TimerTask() {
+			int interval = 4800;
+
+			public void run() {
+				int sec = interval % 60;
+				int min = interval / 60 % 60;
+				int hour = interval / 60 / 60;
+				String time = String.format("%02d:%02d:%02d", hour, min, sec);
+				timeLabel.setText(time);
+				if (interval == 1)
+					timer.cancel();
+				interval--;
+			}
+		}, delay, period);
 		return this.timeLabel;
 	}
 
@@ -115,12 +136,17 @@ public class QTool {
 		return this.finishButton;
 	}
 
-	public void addFinishButtonListener(JPanel mainPanel) {
+	public void addFinishButtonListener(JPanel mainPanel, Answer answer, String userID, int year, String subject) {
 		class ClickListener implements ActionListener {
 			CardLayout cardLayout = (CardLayout) (mainPanel.getLayout());
 
 			public void actionPerformed(ActionEvent e) {
-				// cardLayout.show(panel, "");
+				int input = JOptionPane.showConfirmDialog(null, "Finish and calculate the score?", "Confirm message",
+						JOptionPane.OK_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE);
+				if (input == 0) {
+					answer.insertUserAnswers(userID, year, subject);
+					cardLayout.show(mainPanel, "");
+				}
 			}
 		}
 		ClickListener listener = new ClickListener();

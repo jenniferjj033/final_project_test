@@ -75,10 +75,10 @@ public class QToolPanel extends JPanel {
 			}
 			numButtons = new RoundButton[size];
 			GridLayout gridLayout = new GridLayout(5, 10);
-			gridLayout.setHgap(20);
-			gridLayout.setVgap(20);
+			gridLayout.setHgap(50);
+			gridLayout.setVgap(50);
 			buttonPanel = new JPanel(gridLayout);
-			buttonPanel.setPreferredSize(new Dimension(800, 400));
+			buttonPanel.setPreferredSize(new Dimension(1000, 500));
 			buttonPanel.setBackground(Color.decode("#F8EFD4"));
 			for (int i = 0; i < size; i++) {
 				numButtons[i] = new RoundButton(String.format("%d", i + 1));

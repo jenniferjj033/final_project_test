@@ -3,6 +3,7 @@ import java.awt.event.*;
 import java.awt.font.TextAttribute;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.Map;
 
@@ -19,7 +20,7 @@ public class SignUpPanel extends JPanel {
 	private JButton signUpButton;
 	private JButton loginButton;
 	private Connection conn;
-
+	
 	public SignUpPanel() {
 		try {
 			String server = "jdbc:mysql://140.119.19.73:9306/";
@@ -31,7 +32,6 @@ public class SignUpPanel extends JPanel {
 		} catch (Exception e) {
 			e.getMessage();
 		}
-
 		createComp();
 	}
 
@@ -143,14 +143,24 @@ public class SignUpPanel extends JPanel {
 			public void actionPerformed(ActionEvent e) {
 				try {
 					Statement stat = conn.createStatement();
-					String ID = userIDField.getText();
+					String userID = userIDField.getText();
 					String password = String.valueOf(passwordField.getPassword());
 
-					String query = "INSERT INTO Member VALUES('" + ID + "', '" + password + "');";
+					String query1 = "SELECT COUNT(*) FROM Member WHERE ID ='" + userID + "'";
+					stat.execute(query1);
+
+					ResultSet result = stat.getResultSet();
+					result.next();
+					int count = Integer.parseInt(result.getString(1));
+					if (count == 0) {
+					String query = "INSERT INTO Member VALUES('" + userID + "', '" + password + "');";
 					stat.execute(query);
 					cardLayout.show(panel, "3");
 					userIDField.setText(null);
 					passwordField.setText(null);
+					} else {
+						JOptionPane.showMessageDialog(null, "UserID already exist!", "Error", JOptionPane.ERROR_MESSAGE);
+					}
 
 				} catch (Exception exception) {
 					exception.getMessage();

@@ -1,6 +1,7 @@
 import java.awt.CardLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.ArrayList;
 
 import javax.swing.JFrame;
 import javax.swing.JMenu;
@@ -11,6 +12,26 @@ import javax.swing.JPanel;
 public class Viewer {
 
 	public static void main(String[] args) {
+		/*
+		Answer ans = new Answer();
+		ans.updateUserAnswers(1, "B");
+		ans.updateUserAnswers(2, "D");
+		ans.updateUserAnswers(3, "A");
+		ans.updateUserAnswers(4, "D");
+		ans.updateUserAnswers(5, "D");
+		ans.updateUserAnswers(6, "A");
+		ans.updateUserAnswers(49, "ACD");
+		ans.updateUserAnswers(50, "AD");
+		ans.insertUserAnswers("2", 110, "Society");
+		ArrayList<String> ansList = ans.getCorrectAnswers();
+		ArrayList<Boolean> ifList = ans.getIfCorrect();
+		ArrayList<String> userAns = ans.getUserAnswers("2", 110, "Society");
+		System.out.println(ansList);
+		System.out.println(userAns);
+		System.out.println(ifList);
+		System.out.println(ans.checkAnswer(ifList, ansList, userAns));
+		*/
+		/*
 		JFrame frame = new JFrame();
 		CardLayout cardLayout1 = new CardLayout();
 		JPanel login_cardPanel = new JPanel(cardLayout1);
@@ -30,9 +51,9 @@ public class Viewer {
 		QuestionPanel questionPanel = new QuestionPanel();
 		QToolPanel qToolPanel = new QToolPanel();
 		questionPanel.getQTool().addMoreButtonListener(question_cardPanel, questionPanel);
-		questionPanel.getQTool().addFinishButtonListener(question_cardPanel);
+		questionPanel.getQTool().addFinishButtonListener(question_cardPanel, questionPanel.getAnswer(), loginPanel.getUserID(), 110, "Society");
 		qToolPanel.getQTool().addMoreButtonListener(question_cardPanel, qToolPanel);
-		qToolPanel.getQTool().addFinishButtonListener(question_cardPanel);
+		qToolPanel.getQTool().addFinishButtonListener(question_cardPanel, questionPanel.getAnswer(), loginPanel.getUserID(), 110, "Society");
 		questionPanel.addQNumListener(question_cardPanel, qToolPanel);
 		
 		login_cardPanel.add(loginPanel, "1");
@@ -51,6 +72,7 @@ public class Viewer {
 		//frame.setExtendedState(JFrame.MAXIMIZED_BOTH);
 		frame.setVisible(true);
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		*/
 	}
  
 }

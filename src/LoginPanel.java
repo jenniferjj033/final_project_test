@@ -18,6 +18,7 @@ public class LoginPanel extends JPanel {
 	private JButton loginButton;
 	private JButton signUpButton;
 	private Connection conn;
+	private String userID;
 
 	public LoginPanel() {
 		try {
@@ -30,8 +31,11 @@ public class LoginPanel extends JPanel {
 		} catch (Exception e) {
 			e.getMessage();
 		}
-
 		createComp();
+	}
+	
+	public String getUserID() {
+		return this.userID;
 	}
 
 	public void createComp() {
@@ -143,7 +147,7 @@ public class LoginPanel extends JPanel {
 			public void actionPerformed(ActionEvent e) {
 				try {
 					Statement stat = conn.createStatement();
-					String userID = userIDField.getText();
+					userID = userIDField.getText();
 					String password = String.valueOf(passwordField.getPassword());
 
 					String query1 = "SELECT COUNT(*) FROM Member WHERE ID ='" + userID + "'";

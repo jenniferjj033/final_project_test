@@ -51,10 +51,11 @@ public class QuestionPanel extends JPanel {
 	private JButton dButton;
 	private JButton eButton;
 	private JButton[] xButtons;
-	private int number = 1;
 	private JButton[] numButtons;
+	private int number;
 	private Connection conn;
 	private QTool qTool;
+	private Answer answer;
 
 	public QuestionPanel() {
 		try {
@@ -67,7 +68,9 @@ public class QuestionPanel extends JPanel {
 		} catch (Exception e) {
 			System.out.println(e.getMessage());
 		}
+		number = 1;
 		qTool = new QTool();
+		answer = new Answer();
 		createBackButton();
 		createNextButton();
 		createMarkButton();
@@ -81,9 +84,13 @@ public class QuestionPanel extends JPanel {
 		return this.qTool;
 	}
 
+	public Answer getAnswer() {
+		return this.answer;
+	}
+
 	public void addQNumListener(JPanel panel, QToolPanel qToolPanel) {
 		numButtons = qToolPanel.getNumButtons();
-		
+
 		class ClickListener implements ActionListener {
 			CardLayout cardLayout = (CardLayout) (panel.getLayout());
 
@@ -94,7 +101,7 @@ public class QuestionPanel extends JPanel {
 						if (number == 1) {
 							backButton.setVisible(false);
 							nextButton.setVisible(true);
-						} else if (number == numButtons.length){
+						} else if (number == numButtons.length) {
 							backButton.setVisible(true);
 							nextButton.setVisible(false);
 						} else {
@@ -117,7 +124,7 @@ public class QuestionPanel extends JPanel {
 			numButtons[i].addActionListener(listener);
 		}
 	}
-	
+
 	public void createBackButton() {
 		ImageIcon backIcon = new ImageIcon(
 				new ImageIcon("images/back.png").getImage().getScaledInstance(30, 30, Image.SCALE_DEFAULT));
@@ -156,6 +163,24 @@ public class QuestionPanel extends JPanel {
 		nextButton.setContentAreaFilled(false);
 		class ClickListener implements ActionListener {
 			public void actionPerformed(ActionEvent e) {
+				/*
+				switch (i) {
+				case 0:
+					answer.updateUserAnswers(number, "A");
+					break;
+				case 1:
+					answer.updateUserAnswers(number, "B");
+					break;
+				case 2:
+					answer.updateUserAnswers(number, "C");
+					break;
+				case 3:
+					answer.updateUserAnswers(number, "D");
+					break;
+				}
+				*/
+				
+				
 				number++;
 				backButton.setVisible(true);
 				if (number == numButtons.length) {
@@ -239,6 +264,7 @@ public class QuestionPanel extends JPanel {
 			Statement statB = conn.createStatement();
 			Statement statC = conn.createStatement();
 			Statement statD = conn.createStatement();
+			Statement statE = conn.createStatement();
 
 			String queryA = "SELECT A FROM Society WHERE Number = " + number;
 			statA.execute(queryA);
@@ -260,6 +286,11 @@ public class QuestionPanel extends JPanel {
 			ResultSet resultD = statD.getResultSet();
 			resultD.next();
 
+			String queryE = "SELECT E FROM Society WHERE Number = " + number;
+			statE.execute(queryE);
+			ResultSet resultE = statE.getResultSet();
+			resultE.next();
+
 			answerButtons = new ArrayList<JButton>();
 			aButton = new JButton(resultA.getString(1));
 			bButton = new JButton(resultB.getString(1));
@@ -269,14 +300,20 @@ public class QuestionPanel extends JPanel {
 			answerButtons.add(bButton);
 			answerButtons.add(cButton);
 			answerButtons.add(dButton);
+			int option = 4;
+			if (resultE.getString(1) != null) {
+				option = 5;
+				eButton = new JButton(resultE.getString(1));
+				answerButtons.add(eButton);
+			}
 
 			ImageIcon beforeX = new ImageIcon(
 					new ImageIcon("images/beforeX.png").getImage().getScaledInstance(20, 20, Image.SCALE_DEFAULT));
 			ImageIcon afterX = new ImageIcon(
 					new ImageIcon("images/afterX.png").getImage().getScaledInstance(20, 20, Image.SCALE_DEFAULT));
-			xButtons = new JButton[4];
+			xButtons = new JButton[option];
 			class X_ClickListener implements ActionListener {
-				boolean[] click = { false, false, false, false };
+				boolean[] click = { false, false, false, false, false };
 
 				public void actionPerformed(ActionEvent e) {
 					for (int i = 0; i < xButtons.length; i++) {
@@ -294,7 +331,7 @@ public class QuestionPanel extends JPanel {
 				}
 			}
 			X_ClickListener xListener = new X_ClickListener();
-			for (int i = 0; i < 4; i++) {
+			for (int i = 0; i < option; i++) {
 				xButtons[i] = new JButton(); // "X"
 				xButtons[i].setBorder(null);
 				xButtons[i].setContentAreaFilled(false);
@@ -303,7 +340,7 @@ public class QuestionPanel extends JPanel {
 			}
 
 			class Ans_ClickListener implements ActionListener {
-				boolean[] click = { false, false, false, false };
+				boolean[] click = { false, false, false, false, false };
 
 				public void actionPerformed(ActionEvent e) {
 					for (int i = 0; i < answerButtons.size(); i++) {
@@ -311,6 +348,7 @@ public class QuestionPanel extends JPanel {
 							if (click[i] == false) {
 								answerButtons.get(i).setBorder(new BubbleBorder(Color.decode("#5E8CD1"), 1, 15, 0));
 								xButtons[i].setIcon(beforeX);
+								
 								click[i] = true;
 							} else {
 								answerButtons.get(i).setBorder(null);
@@ -330,46 +368,49 @@ public class QuestionPanel extends JPanel {
 				b.setBorder(null);
 				b.addActionListener(ansListener);
 			}
+
+			answerLabel = new JLabel[option];
+			for (int i = 0; i < option; i++) {
+				answerLabel[i] = new JLabel();
+				answerLabel[i].setBorder(null);
+			}
+			answerLabel[0].setText("A.");
+			answerLabel[1].setText("B.");
+			answerLabel[2].setText("C.");
+			answerLabel[3].setText("D.");
+			if (option == 5) {
+				answerLabel[4].setText("E.");
+			}
+
+			answerPanel = new JPanel(new GridBagLayout());
+			answerPanel.setBackground(Color.decode("#F8EFD4"));
+			GridBagConstraints gbc;
+			for (int i = 0; i < option; i++) {
+				gbc = new GridBagConstraints();
+				gbc.gridx = 0;
+				gbc.gridy = i;
+				gbc.weightx = 1.0;
+				gbc.weighty = 1.0;
+				answerPanel.add(answerLabel[i], gbc);
+
+				gbc = new GridBagConstraints();
+				gbc.gridx = 1;
+				gbc.gridy = i;
+				gbc.weightx = 1.0;
+				gbc.weighty = 1.0;
+				gbc.gridx = 2;
+				gbc.fill = GridBagConstraints.HORIZONTAL;
+				answerPanel.add(answerButtons.get(i), gbc);
+
+				gbc = new GridBagConstraints();
+				gbc.gridx = 3;
+				gbc.gridy = i;
+				gbc.weightx = 1.0;
+				gbc.weighty = 1.0;
+				answerPanel.add(xButtons[i], gbc);
+			}
 		} catch (Exception e) {
 			System.out.println(e.getMessage());
-		}
-
-		answerLabel = new JLabel[4];
-		for (int i = 0; i < 4; i++) {
-			answerLabel[i] = new JLabel();
-			answerLabel[i].setBorder(null);
-		}
-		answerLabel[0].setText("A.");
-		answerLabel[1].setText("B.");
-		answerLabel[2].setText("C.");
-		answerLabel[3].setText("D.");
-
-		answerPanel = new JPanel(new GridBagLayout());
-		answerPanel.setBackground(Color.decode("#F8EFD4"));
-		GridBagConstraints gbc;
-		for (int i = 0; i < 4; i++) {
-			gbc = new GridBagConstraints();
-			gbc.gridx = 0;
-			gbc.gridy = i;
-			gbc.weightx = 1.0;
-			gbc.weighty = 1.0;
-			answerPanel.add(answerLabel[i], gbc);
-
-			gbc = new GridBagConstraints();
-			gbc.gridx = 1;
-			gbc.gridy = i;
-			gbc.weightx = 1.0;
-			gbc.weighty = 1.0;
-			gbc.gridx = 2;
-			gbc.fill = GridBagConstraints.HORIZONTAL;
-			answerPanel.add(answerButtons.get(i), gbc);
-
-			gbc = new GridBagConstraints();
-			gbc.gridx = 3;
-			gbc.gridy = i;
-			gbc.weightx = 1.0;
-			gbc.weighty = 1.0;
-			answerPanel.add(xButtons[i], gbc);
 		}
 	}
 
