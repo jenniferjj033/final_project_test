@@ -4,6 +4,7 @@ import java.awt.Dimension;
 import java.awt.Image;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.ArrayList;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -17,11 +18,13 @@ import javax.swing.JPanel;
 import javax.swing.SwingConstants;
 
 public class QTool {
+	private JButton homeButton;
 	private JButton moreButton;
 	private JButton playButton;
 	private JButton pauseButton;
 	private JLabel timeLabel;
 	private JButton finishButton;
+	private boolean timerun = true;
 
 	public QTool() {
 		createMoreButton();
@@ -31,9 +34,30 @@ public class QTool {
 		createFinishButton();
 	}
 
+	public JButton createHomeButton() {
+		ImageIcon homeIcon = new ImageIcon(
+				new ImageIcon("images/homeBtn.png").getImage().getScaledInstance(30, 30, Image.SCALE_DEFAULT));
+		homeButton = new JButton();
+		homeButton.setIcon(homeIcon);
+		homeButton.setHorizontalAlignment(SwingConstants.CENTER);
+		homeButton.setBorder(null);
+		homeButton.setContentAreaFilled(false);
+		return this.homeButton;
+	}
+
+	public void addHomeButtonListener(JPanel panel) {
+		class ClisckListener implements ActionListener {
+			CardLayout cardLayout = (CardLayout) (panel.getLayout());
+
+			public void actionPerformed(ActionEvent e) {
+				cardLayout.show(panel, ""); // show what?!
+			}
+		}
+	}
+
 	public JButton createMoreButton() {
 		ImageIcon moreIcon = new ImageIcon(
-				new ImageIcon("images/more.png").getImage().getScaledInstance(30, 30, Image.SCALE_DEFAULT));
+				new ImageIcon("images/more.png").getImage().getScaledInstance(40, 40, Image.SCALE_DEFAULT));
 		moreButton = new JButton(); // "#"
 		moreButton.setIcon(moreIcon);
 		moreButton.setBorder(null);
@@ -44,7 +68,6 @@ public class QTool {
 
 	public void addMoreButtonListener(JPanel cardPanel, JPanel actionPanel) {
 		class ClickListener implements ActionListener {
-
 			CardLayout cardLayout = (CardLayout) (cardPanel.getLayout());
 
 			public void actionPerformed(ActionEvent e) {
@@ -53,6 +76,18 @@ public class QTool {
 				} else if (actionPanel instanceof QToolPanel) {
 					cardLayout.show(cardPanel, "1");
 				}
+			}
+		}
+		ClickListener listener = new ClickListener();
+		moreButton.addActionListener(listener);
+	}
+	
+	public void addMoreButtonListener(JPanel panel) { // for AnswerKeyPanel
+		class ClickListener implements ActionListener {
+			CardLayout cardLayout = (CardLayout) (panel.getLayout());
+
+			public void actionPerformed(ActionEvent e) {
+				cardLayout.show(panel, "1");
 			}
 		}
 		ClickListener listener = new ClickListener();
@@ -69,7 +104,7 @@ public class QTool {
 		playButton.setContentAreaFilled(false);
 		class ClickListener implements ActionListener {
 			public void actionPerformed(ActionEvent e) {
-
+				timerun = true;
 			}
 		}
 		ClickListener listener = new ClickListener();
@@ -87,7 +122,7 @@ public class QTool {
 		pauseButton.setContentAreaFilled(false);
 		class ClickListener implements ActionListener {
 			public void actionPerformed(ActionEvent e) {
-
+				timerun = false;
 			}
 		}
 		ClickListener listener = new ClickListener();
@@ -102,26 +137,31 @@ public class QTool {
 		timeLabel.setIcon(timerIcon);
 		timeLabel.setVerticalTextPosition(SwingConstants.CENTER);
 		timeLabel.setHorizontalTextPosition(SwingConstants.RIGHT);
+		timeLabel.setText("01:20:00");
 
 		Timer timer;
 		int delay = 1000;
 		int period = 1000;
 		timer = new Timer();
-		
+
 		timer.scheduleAtFixedRate(new TimerTask() {
 			int interval = 4800;
 
 			public void run() {
-				int sec = interval % 60;
-				int min = interval / 60 % 60;
-				int hour = interval / 60 / 60;
-				String time = String.format("%02d:%02d:%02d", hour, min, sec);
-				timeLabel.setText(time);
+				if (timerun == true) {
+					int sec = interval % 60;
+					int min = interval / 60 % 60;
+					int hour = interval / 60 / 60;
+					String time = String.format("%02d:%02d:%02d", hour, min, sec);
+					timeLabel.setText(time);
+					interval--;
+				}
 				if (interval == 1)
 					timer.cancel();
-				interval--;
+
 			}
 		}, delay, period);
+
 		return this.timeLabel;
 	}
 
@@ -136,17 +176,26 @@ public class QTool {
 		return this.finishButton;
 	}
 
-	public void addFinishButtonListener(JPanel mainPanel, Answer answer, String userID, int year, String subject) {
+	public void addFinishButtonListener(JPanel panel, QuestionPanel questionPanel, String test) {
 		class ClickListener implements ActionListener {
-			CardLayout cardLayout = (CardLayout) (mainPanel.getLayout());
-
+			CardLayout cardLayout = (CardLayout) (panel.getLayout());
+			Answer answer = questionPanel.getAnswer();
+			
 			public void actionPerformed(ActionEvent e) {
 				int input = JOptionPane.showConfirmDialog(null, "Finish and calculate the score?", "Confirm message",
 						JOptionPane.OK_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE);
 				if (input == 0) {
-					answer.insertUserAnswers(userID, year, subject);
-					cardLayout.show(mainPanel, "");
+					answer.insertUserAnswers(test);
+					checkAnswer(test);
+					cardLayout.show(panel, "3");
 				}
+			}
+			
+			public Double checkAnswer(String test) {
+				ArrayList<String> userAns = answer.getUserAnswer();
+				ArrayList<String> corrAns = answer.getCorrectAnswers(test);
+				ArrayList<Boolean> ifCorrect = answer.getIfCorrect(corrAns, userAns);
+				return answer.getScore(ifCorrect, corrAns, userAns);
 			}
 		}
 		ClickListener listener = new ClickListener();

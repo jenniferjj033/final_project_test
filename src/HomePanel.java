@@ -127,7 +127,7 @@ public class HomePanel extends JPanel {
 		class ClickListener implements ActionListener {
 			CardLayout cardLayout = (CardLayout) (panel.getLayout());
 			public void actionPerformed(ActionEvent e) {
-				
+				cardLayout.show(panel, ""); //?
 			}
 		}
 		ClickListener listener = new ClickListener();
@@ -138,32 +138,32 @@ public class HomePanel extends JPanel {
 		class ClickListener implements ActionListener {
 			CardLayout cardLayout = (CardLayout) (panel.getLayout());
 			public void actionPerformed(ActionEvent e) {
-				
+				cardLayout.show(panel, ""); //?
 			}
 		}
 		ClickListener listener = new ClickListener();
-		userButton.addActionListener(listener);
+		testButton.addActionListener(listener);
 	}
 	
 	public void addNoteListener(JPanel panel) {
 		class ClickListener implements ActionListener {
 			CardLayout cardLayout = (CardLayout) (panel.getLayout());
 			public void actionPerformed(ActionEvent e) {
-				
+				cardLayout.show(panel, ""); //?
 			}
 		}
 		ClickListener listener = new ClickListener();
-		userButton.addActionListener(listener);
+		noteButton.addActionListener(listener);
 	}
 	
 	public void addAnalysisListener(JPanel panel) {
 		class ClickListener implements ActionListener {
 			CardLayout cardLayout = (CardLayout) (panel.getLayout());
 			public void actionPerformed(ActionEvent e) {
-				
+				cardLayout.show(panel, ""); //?
 			}
 		}
 		ClickListener listener = new ClickListener();
-		userButton.addActionListener(listener);
+		analysisButton.addActionListener(listener);
 	}
 }

@@ -10,92 +10,86 @@ public class Answer {
 	private ArrayList<String> userAnswers;
 	private ArrayList<Boolean> ifCorrect;
 	private ArrayList<String> correctAnswers;
+	private ArrayList<Integer> numbers;
 	private Connection conn;
-	private String url, username, password;
+	private double score;
 
 	public Answer() {
+		try {
+			String server = "jdbc:mysql://140.119.19.73:9306/";
+			String database = "MG05";
+			String url = server + database;
+			String username = "MG05";
+			String password = "9mMuzQ";
+			conn = DriverManager.getConnection(url, username, password);
+		} catch (Exception e) {
+			System.out.printf("constructor %s\n", e.getMessage());
+		}
+
 		userAnswers = new ArrayList<String>();
 		ifCorrect = new ArrayList<Boolean>();
 		correctAnswers = new ArrayList<String>();
-		for (int i = 0; i < 50; i++) {
-			userAnswers.add(null);
-			ifCorrect.add(false);
-		}
-
-		url = "jdbc:mysql://140.119.19.73:9306/" + "MG05";
-		username = "MG05";
-		password = "9mMuzQ";
-
+		numbers = new ArrayList<Integer>();
+		score = 00;
 	}
 
-	public void updateUserAnswers(int i, String ans) {
+	public void setNumbers(String test) {
+		try {
+			Statement stat = conn.createStatement();
+			String query = "SELECT Number FROM " + test + " WHERE Number <> 0";
+			ResultSet result = stat.executeQuery(query);
+
+			while (result.next()) {
+				numbers.add(result.getInt(1));
+			}
+		} catch (Exception e) {
+			System.out.println("setNumbers from <Answer>: " + e.getMessage());
+		}
+	}
+
+	public void setUserAnswers(int i, String ans) {
 		userAnswers.set(i - 1, ans);
 	}
+	
+	public ArrayList<String> getUserAnswer() {
+		return this.userAnswers;
+	}
 
-	public void insertUserAnswers(String userID, int year, String subject) {
+	public void insertUserAnswers(String test) {
 		try {
-			String column = "`1`";
-			String value = "?";
-			for (int i = 2; i <= 50; i++) {
-				column += ", `" + i + "`";
-				value += ", ?";
-			}
-			conn = DriverManager.getConnection(url, username, password);
 			Statement stat = conn.createStatement();
-			String query1 = "SELECT COUNT(*) FROM Answer WHERE UserID = '" + userID + "' AND Year = '" + year
-					+ "' AND Subject = '" + subject + "' ";
-			stat.execute(query1);
 
-			ResultSet result = stat.getResultSet();
-			result.next();
-			int count = Integer.parseInt(result.getString(1));
-			if (count == 0) {
-				String query2 = "INSERT INTO Answer (UserID, Year, Subject, " + column + ") VALUES (?, ?, ?, " + value
-						+ ")";
-				PreparedStatement preStat = conn.prepareStatement(query2);
-				preStat.setString(1, userID);
-				preStat.setInt(2, year);
-				preStat.setString(3, subject);
-				for (int i = 0; i < 50; i++) {
-					preStat.setString(i + 4, userAnswers.get(i));
-				}
-				preStat.executeUpdate();
-			} else {
-				System.out.printf("%s, %d %s: Data already upload.", userID, year, subject);
+			for (int i = 0; i < userAnswers.size(); i++) {
+				String query = "UPDATE " + test + " SET UserAnswer = '" + userAnswers.get(i) + "' WHERE Number = "
+						+ numbers.get(i);
+				stat.execute(query);
 			}
 
 		} catch (Exception e) {
 			System.out.println("insertUserAnswers: " + e.getMessage());
 		}
 	}
-
-	public ArrayList<String> getUserAnswers(String userID, int year, String subject) {
+	
+	public ArrayList<String> getUserAnswers(String test) {
 		try {
-			conn = DriverManager.getConnection(url, username, password);
 			Statement stat = conn.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
-			String query = "SELECT * FROM Answer WHERE UserID = '" + userID + "' AND Year = '" + year
-					+ "' AND Subject = '" + subject + "' ";
-			ArrayList<String> list = new ArrayList<String>();
+			String query = "SELECT UserAnswer FROM " + test + " WHERE Number <> 0";
 			boolean hasResultSet = stat.execute(query);
 			if (hasResultSet) {
 				ResultSet result = stat.getResultSet();
-				ResultSetMetaData metaData = result.getMetaData();
-				int columnCount = metaData.getColumnCount();
 				while (result.next()) {
-					for (int i = 4; i <= columnCount; i++) {
-						list.add(result.getString(i));
-					}
+					userAnswers.add(result.getString(1));
 				}
 			}
-			return list;
+			return userAnswers;
 		} catch (Exception e) {
-			System.out.println("getUserAnswers: " + e.getMessage());
+			System.out.println("getUserAnswers from <test>: " + e.getMessage());
 		}
 		return null;
 	}
 
-	public ArrayList<Boolean> getIfCorrect() {
-		for (int i = 0; i < 50; i++) {
+	public ArrayList<Boolean> getIfCorrect(ArrayList<String> correctAnswers, ArrayList<String> userAnswers) {
+		for (int i = 0; i < userAnswers.size(); i++) {
 			if (userAnswers.get(i) != null) {
 				if (userAnswers.get(i).equals(correctAnswers.get(i))) {
 					ifCorrect.set(i, true);
@@ -107,15 +101,14 @@ public class Answer {
 		return this.ifCorrect;
 	}
 
-	public void updateIfCorrect(int i, boolean b) {
+	public void setIfCorrect(int i, boolean b) {
 		ifCorrect.set(i, b);
 	}
 
-	public ArrayList<String> getCorrectAnswers() {
+	public ArrayList<String> getCorrectAnswers(String test) {
 		try {
-			conn = DriverManager.getConnection(url, username, password);
 			Statement stat = conn.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
-			String query = "SELECT Answer FROM Society WHERE Number <> 0";
+			String query = "SELECT Answer FROM " + test + " WHERE Number <> 0";
 			boolean hasResultSet = stat.execute(query);
 			if (hasResultSet) {
 				ResultSet result = stat.getResultSet();
@@ -124,18 +117,20 @@ public class Answer {
 				}
 			}
 		} catch (Exception e) {
-			System.out.println("getCorrectAnswers: " + e.getMessage());
+			System.out.println("getCorrectAnswers from <Answer>: " + e.getMessage());
 		}
 		return this.correctAnswers;
 	}
 
-	public double checkAnswer(ArrayList<Boolean> ifCorrect, ArrayList<String> correctAnswers,
+	public double getScore() {
+		return this.score;
+	}
+	
+	public double getScore(ArrayList<Boolean> ifCorrect, ArrayList<String> correctAnswers,
 			ArrayList<String> userAnswers) {
-		double score = 0;
 		int correctNum = 0;
 		int qNum = 0;
 		try {
-			conn = DriverManager.getConnection(url, username, password);
 			Statement stat = conn.createStatement();
 			String query = "SELECT `Number` FROM `Society` WHERE `MCQ` = 'TRUE'";
 			if (stat.execute(query)) {
@@ -163,7 +158,6 @@ public class Answer {
 							correctNum += 1; // 答對一個選項
 						}
 					}
-
 				}
 				if ((correctAnswers.get(i).length() + userAnswers.get(i).length()) - (2 * correctNum) > 2) {
 					correctNum = 0;
