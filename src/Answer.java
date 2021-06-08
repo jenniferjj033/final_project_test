@@ -11,6 +11,7 @@ public class Answer {
 	private ArrayList<Boolean> ifCorrect;
 	private ArrayList<String> correctAnswers;
 	private ArrayList<Integer> numbers;
+	private ArrayList<String> ifMarked;
 	private Connection conn;
 	private double score;
 
@@ -30,35 +31,41 @@ public class Answer {
 		ifCorrect = new ArrayList<Boolean>();
 		correctAnswers = new ArrayList<String>();
 		numbers = new ArrayList<Integer>();
-		score = 00;
+		ifMarked = new ArrayList<String>();
+		score = 0;
 	}
 
 	public void setNumbers(String test) {
 		try {
 			Statement stat = conn.createStatement();
-			String query = "SELECT Number FROM " + test + " WHERE Number <> 0";
+			String query = "SELECT Number FROM " + test;
 			ResultSet result = stat.executeQuery(query);
 
 			while (result.next()) {
 				numbers.add(result.getInt(1));
+				userAnswers.add(null);
+				ifMarked.add("FALSE");
 			}
 		} catch (Exception e) {
 			System.out.println("setNumbers from <Answer>: " + e.getMessage());
 		}
 	}
+	
+	public ArrayList<Integer> getNumbers() {
+		return this.numbers;
+	}
 
 	public void setUserAnswers(int i, String ans) {
-		userAnswers.set(i - 1, ans);
+		userAnswers.set(i, ans);
 	}
-	
-	public ArrayList<String> getUserAnswer() {
+
+	public ArrayList<String> getUserAnswers() {
 		return this.userAnswers;
 	}
 
 	public void insertUserAnswers(String test) {
 		try {
 			Statement stat = conn.createStatement();
-
 			for (int i = 0; i < userAnswers.size(); i++) {
 				String query = "UPDATE " + test + " SET UserAnswer = '" + userAnswers.get(i) + "' WHERE Number = "
 						+ numbers.get(i);
@@ -69,11 +76,12 @@ public class Answer {
 			System.out.println("insertUserAnswers: " + e.getMessage());
 		}
 	}
-	
+
 	public ArrayList<String> getUserAnswers(String test) {
 		try {
+			userAnswers = new ArrayList<String>();
 			Statement stat = conn.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
-			String query = "SELECT UserAnswer FROM " + test + " WHERE Number <> 0";
+			String query = "SELECT UserAnswer FROM " + test;
 			boolean hasResultSet = stat.execute(query);
 			if (hasResultSet) {
 				ResultSet result = stat.getResultSet();
@@ -89,26 +97,26 @@ public class Answer {
 	}
 
 	public ArrayList<Boolean> getIfCorrect(ArrayList<String> correctAnswers, ArrayList<String> userAnswers) {
+		ifCorrect = new ArrayList<Boolean>();
 		for (int i = 0; i < userAnswers.size(); i++) {
 			if (userAnswers.get(i) != null) {
 				if (userAnswers.get(i).equals(correctAnswers.get(i))) {
-					ifCorrect.set(i, true);
+					ifCorrect.add(true);
+				} else {
+					ifCorrect.add(false);
 				}
 			} else {
-				ifCorrect.set(i, false);
+				ifCorrect.add(false);
 			}
 		}
 		return this.ifCorrect;
 	}
 
-	public void setIfCorrect(int i, boolean b) {
-		ifCorrect.set(i, b);
-	}
-
 	public ArrayList<String> getCorrectAnswers(String test) {
 		try {
+			correctAnswers = new ArrayList<String>();
 			Statement stat = conn.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
-			String query = "SELECT Answer FROM " + test + " WHERE Number <> 0";
+			String query = "SELECT Answer FROM " + test ;
 			boolean hasResultSet = stat.execute(query);
 			if (hasResultSet) {
 				ResultSet result = stat.getResultSet();
@@ -121,18 +129,45 @@ public class Answer {
 		}
 		return this.correctAnswers;
 	}
+	
+	public void setIfMarked(int i, String s) {
+		ifMarked.set(i , s);
+	}
+	
+	public void insertIfMarked(String test) {
+		try {
+			Statement stat = conn.createStatement();
+
+			for (int i = 0; i < ifMarked.size(); i++) {
+				String query = "UPDATE " + test + " SET UserAnswer = '" + ifMarked.get(i) + "' WHERE Number = "
+						+ numbers.get(i);
+				stat.execute(query);
+			}
+
+		} catch (Exception e) {
+			System.out.println("insertIfMarked: " + e.getMessage());
+		}
+	}
+	
+	public ArrayList<String> getIfMarked(){
+		return this.ifMarked;
+	}
 
 	public double getScore() {
 		return this.score;
 	}
-	
-	public double getScore(ArrayList<Boolean> ifCorrect, ArrayList<String> correctAnswers,
-			ArrayList<String> userAnswers) {
+
+	public double getScore(String test) {
 		int correctNum = 0;
 		int qNum = 0;
+		score = 0;
+		userAnswers = getUserAnswers(test);
+		correctAnswers = getCorrectAnswers(test);
+		ifCorrect = getIfCorrect(userAnswers, correctAnswers);
+		
 		try {
 			Statement stat = conn.createStatement();
-			String query = "SELECT `Number` FROM `Society` WHERE `MCQ` = 'TRUE'";
+			String query = "SELECT `Number` FROM "+ test + " WHERE `MCQ` = 'TRUE'";
 			if (stat.execute(query)) {
 				ResultSet result = stat.getResultSet();
 				result.next();

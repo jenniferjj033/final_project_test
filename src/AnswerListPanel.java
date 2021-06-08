@@ -1,4 +1,3 @@
-import java.awt.BorderLayout;
 import java.awt.CardLayout;
 import java.awt.Color;
 import java.awt.Dimension;
@@ -23,20 +22,21 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.SwingConstants;
-import javax.swing.border.LineBorder;
 
 import style.BubbleBorder;
 
-public class QListPanel extends JPanel {
+public class AnswerListPanel extends JPanel {
 	private JLabel titleLabel;
 	private ArrayList<JButton> questionButtons;
 	private ArrayList<JLabel> questionLabels;
-	private JButton homeButton;
+	private JButton homeButton, backButton;
 	private JPanel menuPanel;
 	private Connection conn;
+	private QTool qTool;
 	private String test;
+	private String title;
 	
-	public QListPanel(String test) {
+	public AnswerListPanel(String test) {
 		try {
 			String server = "jdbc:mysql://140.119.19.73:9306/";
 			String database = "MG05";
@@ -48,23 +48,38 @@ public class QListPanel extends JPanel {
 			System.out.println(e.getMessage());
 		}
 		this.test = test;
+		this.title = "ANSWER";
 		createTitleLabel();
-		createQuestionButtons(test);
-		createHomeButton();
+		createQuestionButtons();
+		createBackButton();
 		setLayout();
 	}
-
+	
+	public QTool getQTool() {
+		return this.qTool;
+	}
+	
+	public void updateTitle(String title) {
+		this.title = title;
+		backButton.setVisible(true);
+		removeAll();
+		createTitleLabel();
+		setLayout();
+		validate();
+		repaint();
+	}
+	
 	public void createTitleLabel() {
 		ImageIcon loginIcon = new ImageIcon(
-				new ImageIcon("images/login.png").getImage().getScaledInstance(50, 50, Image.SCALE_DEFAULT));
-		titleLabel = new JLabel("ANSWER", loginIcon, SwingConstants.LEFT);
+				new ImageIcon("images/login.png").getImage().getScaledInstance(60, 60, Image.SCALE_DEFAULT));
+		titleLabel = new JLabel(title, loginIcon, SwingConstants.LEFT);
 		titleLabel.setVerticalTextPosition(SwingConstants.CENTER);
 		titleLabel.setHorizontalTextPosition(SwingConstants.RIGHT);
-		titleLabel.setFont(new Font("Comic Sans MS", Font.BOLD, 20));
-		titleLabel.setForeground(Color.decode("#FDA172"));
+		titleLabel.setFont(new Font("Lucida Handwriting", Font.ITALIC, 40));
+		titleLabel.setForeground(new Color(139, 69, 19));
 	}
 
-	public void createQuestionButtons(String test) {
+	public void createQuestionButtons() {
 		questionButtons = new ArrayList<JButton>();
 		questionLabels = new ArrayList<JLabel>();
 
@@ -74,22 +89,22 @@ public class QListPanel extends JPanel {
 		int i = 0;
 		try {
 			Statement stat = conn.createStatement();
-			String query1 = "SELECT Number, Question, Answer, UserAnswer FROM " + test + " WHERE Number <> 0";
+			String query1 = "SELECT Year, Number, Question, Answer, UserAnswer FROM " + test + " WHERE Number <> 0";
 			boolean hasResultSet = stat.execute(query1);
 			if (hasResultSet) {
 				ResultSet result = stat.getResultSet();
 				while (result.next()) {
 					questionButtons.add(new JButton(
-							String.format("%s", result.getString(2))));
+							String.format("%s", result.getString(3))));
 					questionButtons.get(i).setHorizontalAlignment(SwingConstants.LEFT);
 					questionButtons.get(i).setContentAreaFilled(false);
-					questionButtons.get(i).setPreferredSize(new Dimension(1000, 50));
-					if (result.getString(3).equals(result.getString(4))) {
+					questionButtons.get(i).setPreferredSize(new Dimension(700, 50));
+					if (result.getString(4).equals(result.getString(5))) {
 						questionButtons.get(i).setBorder(new BubbleBorder(Color.decode("#5E8C61"), 2, 15, 0));
 					} else {
 						questionButtons.get(i).setBorder(new BubbleBorder(Color.decode("#B6174B"), 2, 15, 0));
 					}
-					questionLabels.add(new JLabel(String.format("Q%d", result.getInt(1))));
+					questionLabels.add(new JLabel(String.format("%d - Q%d", result.getInt(1), result.getInt(2))));
 					
 					gbc = new GridBagConstraints();
 					gbc.gridx = 0;
@@ -124,12 +139,12 @@ public class QListPanel extends JPanel {
 			public void actionPerformed(ActionEvent e) {
 				for (int i = 0; i < questionButtons.size(); i++) {
 					if (questionButtons.get(i).getModel().isArmed()) {
-						keyPanel.updateNote(test);
-						keyPanel.updateNumber(Integer.parseInt(questionLabels.get(i).getText().substring(1)));
-						keyPanel.repaintPanel(test);
+						keyPanel.updateNote();
+						keyPanel.updateNumber(Integer.parseInt(questionLabels.get(i).getText().substring(7)));
+						keyPanel.repaintPanel();
 					}
 				}
-				cardLayout.show(panel, "2");
+				cardLayout.show(panel, "answerKeyPanel");
 			}
 		}
 		ClickListener listener = new ClickListener();
@@ -138,17 +153,48 @@ public class QListPanel extends JPanel {
 		}
 	}
 
-	public void createHomeButton() {
-		QTool qTool = new QTool();
-		homeButton = qTool.createHomeButton();
+	public void createBackButton() {
+		ImageIcon backIcon = new ImageIcon(
+				new ImageIcon("images/back1.png").getImage().getScaledInstance(40, 40, Image.SCALE_DEFAULT));
+		backButton = new JButton(); // "<-"
+		backButton.setIcon(backIcon);
+		backButton.setBorder(null);
+		backButton.setContentAreaFilled(false);
+		backButton.setVisible(false);
+	}
+	
+	public void addBackListener(JPanel panel) {
+		CardLayout cardLayout = (CardLayout)(panel.getLayout());
+		
+		class ClickListener implements ActionListener {
+			public void actionPerformed(ActionEvent e) {
+				cardLayout.show(panel, "subjectPanel");
+			}
+		}
+		ClickListener listener = new ClickListener();
+		backButton.addActionListener(listener);
 	}
 
 	public void setLayout() {
+		qTool = new QTool();
+		homeButton = qTool.createHomeButton();
+
+		JPanel down_toolPanel = new JPanel();
+		down_toolPanel.setBackground(Color.decode("#F8EFD4"));
+		down_toolPanel.setLayout(new BoxLayout(down_toolPanel, BoxLayout.X_AXIS));
+		down_toolPanel.add(Box.createRigidArea(new Dimension(50, 0)));
+		down_toolPanel.add(backButton);
+		down_toolPanel.add(Box.createHorizontalGlue());
+		down_toolPanel.add(homeButton);
+		down_toolPanel.add(Box.createHorizontalGlue());
+		down_toolPanel.add(new JLabel());
+		down_toolPanel.add(Box.createRigidArea(new Dimension(50, 0)));
+		
 		JScrollPane scrollPane = new JScrollPane(menuPanel);
 		scrollPane.setAlignmentY(TOP_ALIGNMENT);
 		scrollPane.setBackground(Color.decode("#F8EFD4"));
 		scrollPane.setBorder(null);
-		scrollPane.setPreferredSize(new Dimension(100, 600));
+		scrollPane.setPreferredSize(new Dimension(500, 500));
 		
 		setBackground(Color.decode("#F8EFD4"));
 		setLayout(new GridBagLayout());
@@ -157,7 +203,7 @@ public class QListPanel extends JPanel {
 		gbc.gridy = 0;
 		gbc.weightx = 1.0;
 		gbc.weighty = 1.0;
-		gbc.insets = new Insets(15, 0, 0, 0);
+		gbc.insets = new Insets(20, 0, 0, 0);
 		gbc.anchor = GridBagConstraints.NORTH;
 		add(titleLabel, gbc);
 
@@ -175,8 +221,9 @@ public class QListPanel extends JPanel {
 		gbc.gridy = 3;
 		gbc.weightx = 1.0;
 		gbc.weighty = 1.0;
-		gbc.insets = new Insets(0, 0, 15, 0);
+		gbc.insets = new Insets(0, 0, 20, 0);
+		gbc.fill = GridBagConstraints.HORIZONTAL;
 		gbc.anchor = GridBagConstraints.SOUTH;
-		add(homeButton, gbc);
+		add(down_toolPanel, gbc);
 	}
 }

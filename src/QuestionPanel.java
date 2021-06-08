@@ -1,9 +1,12 @@
+import java.awt.BorderLayout;
 import java.awt.CardLayout;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
+import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
+import java.awt.GridLayout;
 import java.awt.Image;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
@@ -11,17 +14,16 @@ import java.awt.event.ActionListener;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collections;
 
-import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JLabel;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
@@ -31,30 +33,31 @@ import javax.swing.border.LineBorder;
 import style.*;
 
 public class QuestionPanel extends JPanel {
-	private JPanel up_toolPanel;
-	private JPanel down_toolPanel;
-	private JPanel questionPanel;
-	private JPanel answerPanel;
-	private JButton moreButton;
-	private JButton playButton;
-	private JButton pauseButton;
+	private JPanel up_toolPanel, down_toolPanel;
+	private JPanel questionPanel, answerPanel;
+	private JButton moreButton, playButton, pauseButton;
 	private JLabel timeLabel;
-	private JButton finishButton;
-	private JButton backButton;
-	private JButton nextButton;
+	private JButton finishButton, backButton, nextButton;
 	private JTextArea questionArea;
 	private JButton markButton;
 	private JLabel[] answerLabel;
 	private ArrayList<JButton> answerButtons;
 	private ArrayList<String> chosenAnsNum; // 使用者當題答案
+	private ArrayList<String> ifMarked;
 	private JButton aButton, bButton, cButton, dButton, eButton;
 	private JButton[] xButtons;
-	private JButton[] numButtons; // 切換題號按鈕
 	private int number; // 題號
+	private int option;
 	private Connection conn;
 	private QTool qTool;
 	private Answer answer;
+	private String test;
 	
+	private JButton[] numButtons;
+	private JPanel buttonPanel;
+	private int size;
+	
+
 	public QuestionPanel(String test) {
 		try {
 			String server = "jdbc:mysql://140.119.19.73:9306/";
@@ -67,17 +70,23 @@ public class QuestionPanel extends JPanel {
 			System.out.println(e.getMessage());
 		}
 
+		this.test = test;
 		chosenAnsNum = new ArrayList<String>();
-		number = 1;
 		qTool = new QTool();
 		answer = new Answer();
-		createBackButton(test);
-		createNextButton(test);
+		answer.setNumbers(test);
+		ifMarked = answer.getIfMarked();
+		number = 1;
+		
+		createBackButton();
+		createNextButton();
 		createMarkButton();
-		createQuestionArea(test);
-		createAnswerComp(test);
+		createQuestionArea();
+		createAnswerComp();
 		createQToolPanel();
-		setLayout();
+		setQuestionLayout();
+		
+		createButtons();
 	}
 
 	public QTool getQTool() {
@@ -87,16 +96,48 @@ public class QuestionPanel extends JPanel {
 	public Answer getAnswer() {
 		return this.answer;
 	}
-	
+
 	public JLabel getTimeLabel() {
 		return this.timeLabel;
 	}
-	
+
+	public String getTest() {
+		return this.test;
+	}
+
 	public void updateNumber(int num) {
 		this.number = num;
 	}
-	
-	public void repaintPanel(String test) {
+
+	public void updateUserAnswers() {
+		String a = "";
+		for (int i = 0; i < chosenAnsNum.size(); i++) {
+			switch (chosenAnsNum.get(i)) {
+			case "0":
+				a += "A";
+				break;
+			case "1":
+				a += "B";
+				break;
+			case "2":
+				a += "C";
+				break;
+			case "3":
+				a += "D";
+				break;
+			case "4":
+				a += "E";
+				break;
+			}
+		}
+
+		if (a != "" && a != answer.getUserAnswers().get(number - 1)) {
+			answer.setUserAnswers(number - 1, a);
+		}
+		chosenAnsNum.clear();
+	}
+
+	public void repaintQuestionPanel() {
 		int last = 0;
 		int first = 0;
 		try {
@@ -123,14 +164,15 @@ public class QuestionPanel extends JPanel {
 			nextButton.setVisible(true);
 		}
 		removeAll();
-		createQuestionArea(test);
-		createAnswerComp(test);
-		setLayout();
+		createMarkButton();
+		createQuestionArea();
+		createAnswerComp();
+		setQuestionLayout();
 		validate();
 		repaint();
 	}
-	
-	public void createBackButton(String test) {
+
+	public void createBackButton() {
 		ImageIcon backIcon = new ImageIcon(
 				new ImageIcon("images/back.png").getImage().getScaledInstance(30, 30, Image.SCALE_DEFAULT));
 		backButton = new JButton(); // "<-"
@@ -141,32 +183,16 @@ public class QuestionPanel extends JPanel {
 		backButton.setVisible(false);
 		class ClickListener implements ActionListener {
 			public void actionPerformed(ActionEvent e) {
-				String a = null;
-				for (int i = 0; i < chosenAnsNum.size(); i++) {
-					switch (chosenAnsNum.get(i)) {
-					case "0":
-						a += "A";
-					case "1":
-						a += "B";
-					case "2":
-						a += "C";
-					case "3":
-						a += "D";
-					case "4":
-						a += "E";
-					}
-				}
-				answer.setUserAnswers(number, a);
-
+				updateUserAnswers();
 				number--;
-				repaintPanel(test);
+				repaintQuestionPanel();
 			}
 		}
 		ClickListener listener = new ClickListener();
 		backButton.addActionListener(listener);
 	}
 
-	public void createNextButton(String test) {
+	public void createNextButton() {
 		ImageIcon nextIcon = new ImageIcon(
 				new ImageIcon("images/next.png").getImage().getScaledInstance(30, 30, Image.SCALE_DEFAULT));
 		nextButton = new JButton(); // "->"
@@ -176,25 +202,9 @@ public class QuestionPanel extends JPanel {
 		nextButton.setContentAreaFilled(false);
 		class ClickListener implements ActionListener {
 			public void actionPerformed(ActionEvent e) {
-				String a = null;
-				for (int i = 0; i < chosenAnsNum.size(); i++) {
-					switch (chosenAnsNum.get(i)) {
-					case "0":
-						a += "A";
-					case "1":
-						a += "B";
-					case "2":
-						a += "C";
-					case "3":
-						a += "D";
-					case "4":
-						a += "E";
-					}
-				}
-				answer.setUserAnswers(number, a);
-
+				updateUserAnswers();
 				number++;
-				repaintPanel(test);
+				repaintQuestionPanel();
 
 			}
 		}
@@ -205,22 +215,32 @@ public class QuestionPanel extends JPanel {
 	public void createMarkButton() {
 		ImageIcon beforeMark = new ImageIcon(
 				new ImageIcon("images/beforeMark.png").getImage().getScaledInstance(30, 30, Image.SCALE_DEFAULT));
+		ImageIcon qMark = new ImageIcon(
+				new ImageIcon("images/afterMark.png").getImage().getScaledInstance(25, 25, Image.SCALE_DEFAULT));
 		ImageIcon afterMark = new ImageIcon(
 				new ImageIcon("images/afterMark.png").getImage().getScaledInstance(30, 30, Image.SCALE_DEFAULT));
 		markButton = new JButton(); // "?"
-		markButton.setIcon(beforeMark);
 		markButton.setBorder(null);
 		markButton.setOpaque(false);
 		markButton.setContentAreaFilled(false);
-		class ClickListener implements ActionListener {
-			int click = 0;
+		if (ifMarked.get(number - 1) == "FALSE") {
+			markButton.setIcon(beforeMark);
+		} else {
+			markButton.setIcon(afterMark);
+		}
 
+		class ClickListener implements ActionListener {
 			public void actionPerformed(ActionEvent e) {
-				click++;
-				if (click % 2 == 1) {
+				if (ifMarked.get(number - 1) == "FALSE") {
 					markButton.setIcon(afterMark);
+					numButtons[number - 1].setText("");
+					numButtons[number - 1].setIcon(qMark);
+					ifMarked.set(number - 1, "TRUE");
 				} else {
 					markButton.setIcon(beforeMark);
+					numButtons[number - 1].setText(String.format("%s", number));
+					numButtons[number - 1].setIcon(null);
+					ifMarked.set(number - 1, "FALSE");
 				}
 			}
 		}
@@ -228,7 +248,7 @@ public class QuestionPanel extends JPanel {
 		markButton.addActionListener(listener);
 	}
 
-	public void createQuestionArea(String test) {
+	public void createQuestionArea() {
 		questionArea = new JTextArea();
 		questionArea.setLineWrap(true);
 		questionArea.setEditable(false);
@@ -236,7 +256,7 @@ public class QuestionPanel extends JPanel {
 		JScrollPane scrollPane = new JScrollPane(questionArea);
 		scrollPane.getViewport().getView().setBackground(Color.decode("#F8EFD4"));
 		scrollPane.setBorder(new LineBorder(Color.decode("#524632")));
-		scrollPane.setPreferredSize(new Dimension(200, 150));
+		scrollPane.setPreferredSize(new Dimension(200, 120));
 		scrollPane.setAlignmentX(Component.CENTER_ALIGNMENT);
 		markButton.setAlignmentY(Component.TOP_ALIGNMENT);
 		questionPanel = new JPanel();
@@ -255,33 +275,57 @@ public class QuestionPanel extends JPanel {
 			ResultSet result = stat.getResultSet();
 			result.next();
 
-			Statement stat2 = conn.createStatement();
-			String Question2 = "SELECT Groupnumber FROM "+ test +" WHERE Number = " + number;
-			stat2.execute(Question2);
-			ResultSet result2 = stat2.getResultSet();
-			result2.next();
-
-			if (result2.getInt(1) != 0) {
-
-				Statement stat3 = conn.createStatement();
-				String Question3 = "SELECT Question FROM " + test + " WHERE Number = 0 AND Groupnumber = "
-						+ result2.getInt(1);
-				stat3.execute(Question3);
-				ResultSet result3 = stat3.getResultSet();
-				result3.next();
-				questionArea.setText(String.format("%s\n\nQ%d. %s\n", result3.getString(1), number, result.getString(1)));
-			} else {
-				questionArea.setText(String.format("Q%d. %s", number, result.getString(1)));
-			}
-
+			questionArea.setText(String.format("Q%d. %s", number, result.getString(1)));
+			questionArea.setFont(new Font("微軟正黑體", Font.PLAIN, 16));
 		} catch (Exception e) {
 			System.out.printf("create question area %s\n", e.getMessage());
 		}
 	}
 
-	public void createAnswerComp(String test) {
+	public void createXButton() {
+		ImageIcon beforeX = new ImageIcon(
+				new ImageIcon("images/beforeX.png").getImage().getScaledInstance(20, 20, Image.SCALE_DEFAULT));
+		ImageIcon afterX = new ImageIcon(
+				new ImageIcon("images/afterX.png").getImage().getScaledInstance(20, 20, Image.SCALE_DEFAULT));
+		xButtons = new JButton[option];
+		class X_ClickListener implements ActionListener {
+			boolean[] click = { false, false, false, false, false };
+
+			public void actionPerformed(ActionEvent e) {
+				for (int i = 0; i < xButtons.length; i++) {
+					if (xButtons[i].getModel().isArmed()) {
+						if (click[i] == false) {
+							xButtons[i].setIcon(afterX);
+							answerButtons.get(i).setBorder(new BubbleBorder(Color.decode("#F8EFD4"), 1, 15, 0));
+							chosenAnsNum.remove(String.valueOf(i));
+							click[i] = true;
+						} else {
+							xButtons[i].setIcon(beforeX);
+							click[i] = false;
+						}
+					}
+				}
+				// System.out.println(chosenAnsNum);
+			}
+		}
+		X_ClickListener xListener = new X_ClickListener();
+		for (int i = 0; i < option; i++) {
+			xButtons[i] = new JButton(); // "X"
+			xButtons[i].setBorder(null);
+			xButtons[i].setContentAreaFilled(false);
+			xButtons[i].setIcon(beforeX);
+			xButtons[i].addActionListener(xListener);
+		}
+	}
+
+	public void createAnswerButton() {
+		ImageIcon beforeX = new ImageIcon(
+				new ImageIcon("images/beforeX.png").getImage().getScaledInstance(20, 20, Image.SCALE_DEFAULT));
+		ImageIcon afterX = new ImageIcon(
+				new ImageIcon("images/afterX.png").getImage().getScaledInstance(20, 20, Image.SCALE_DEFAULT));
+		option = 4;
+
 		try {
-			int option = 4;
 			answerButtons = new ArrayList<JButton>();
 			Statement stat = conn.createStatement();
 
@@ -323,42 +367,49 @@ public class QuestionPanel extends JPanel {
 			}
 			resultE.close();
 
-			ImageIcon beforeX = new ImageIcon(
-					new ImageIcon("images/beforeX.png").getImage().getScaledInstance(20, 20, Image.SCALE_DEFAULT));
-			ImageIcon afterX = new ImageIcon(
-					new ImageIcon("images/afterX.png").getImage().getScaledInstance(20, 20, Image.SCALE_DEFAULT));
-			xButtons = new JButton[option];
-			class X_ClickListener implements ActionListener {
-				boolean[] click = { false, false, false, false, false };
-
-				public void actionPerformed(ActionEvent e) {
-					for (int i = 0; i < xButtons.length; i++) {
-						if (xButtons[i].getModel().isArmed()) {
-							if (click[i] == false) {
-								xButtons[i].setIcon(afterX);
-								answerButtons.get(i).setBorder(null);
-								chosenAnsNum.remove(String.valueOf(i));
-								click[i] = true;
-							} else {
-								xButtons[i].setIcon(beforeX);
-								click[i] = false;
-							}
-						}
-					}
-					// System.out.println(chosenAnsNum);
-				}
+			for (JButton b : answerButtons) {
+				b.setHorizontalAlignment(SwingConstants.LEFT);
+				b.setBorder(new BubbleBorder(Color.decode("#F8EFD4"), 1, 15, 0));
+				b.setContentAreaFilled(false);
+				b.setPreferredSize(new Dimension(900, 70));
+				b.setFont(new Font("微軟正黑體", Font.PLAIN, 16));
 			}
-			X_ClickListener xListener = new X_ClickListener();
-			for (int i = 0; i < option; i++) {
-				xButtons[i] = new JButton(); // "X"
-				xButtons[i].setBorder(null);
-				xButtons[i].setContentAreaFilled(false);
-				xButtons[i].setIcon(beforeX);
-				xButtons[i].addActionListener(xListener);
+
+			boolean[] click = { false, false, false, false, false };
+			String a = answer.getUserAnswers().get(number - 1);
+			if (a != null) {
+				for (int i = 0; i < a.length(); i++) {
+					switch (a.charAt(i)) {
+					case 'A':
+						aButton.setBorder(new BubbleBorder(Color.decode("#5E8CD1"), 1, 15, 0));
+						click[0] = true;
+						chosenAnsNum.add("0");
+						break;
+					case 'B':
+						bButton.setBorder(new BubbleBorder(Color.decode("#5E8CD1"), 1, 15, 0));
+						click[1] = true;
+						chosenAnsNum.add("1");
+						break;
+					case 'C':
+						cButton.setBorder(new BubbleBorder(Color.decode("#5E8CD1"), 1, 15, 0));
+						click[2] = true;
+						chosenAnsNum.add("2");
+						break;
+					case 'D':
+						dButton.setBorder(new BubbleBorder(Color.decode("#5E8CD1"), 1, 15, 0));
+						click[3] = true;
+						chosenAnsNum.add("3");
+						break;
+					case 'E':
+						eButton.setBorder(new BubbleBorder(Color.decode("#5E8CD1"), 1, 15, 0));
+						click[4] = true;
+						chosenAnsNum.add("4");
+						break;
+					}
+				}
 			}
 
 			class Ans_ClickListener implements ActionListener {
-				boolean[] click = { false, false, false, false, false };
 
 				public void actionPerformed(ActionEvent e) {
 					for (int i = 0; i < answerButtons.size(); i++) {
@@ -399,80 +450,94 @@ public class QuestionPanel extends JPanel {
 			}
 			Ans_ClickListener ansListener = new Ans_ClickListener();
 			for (JButton b : answerButtons) {
-				b.setHorizontalAlignment(SwingConstants.LEFT);
-				b.setContentAreaFilled(false);
-				b.setPreferredSize(new Dimension(900, 70));
-				b.setBorder(new BubbleBorder(Color.decode("#F8EFD4"), 1, 15, 0));
 				b.addActionListener(ansListener);
-			}
-
-			answerLabel = new JLabel[option];
-			for (int i = 0; i < option; i++) {
-				answerLabel[i] = new JLabel();
-				answerLabel[i].setBorder(null);
-			}
-			answerLabel[0].setText("A.");
-			answerLabel[1].setText("B.");
-			answerLabel[2].setText("C.");
-			answerLabel[3].setText("D.");
-			if (option == 5) {
-				answerLabel[4].setText("E.");
-			}
-
-			answerPanel = new JPanel(new GridBagLayout());
-			answerPanel.setBackground(Color.decode("#F8EFD4"));
-			GridBagConstraints gbc;
-			for (int i = 0; i < option; i++) {
-				gbc = new GridBagConstraints();
-				gbc.gridx = 0;
-				gbc.gridy = i;
-				gbc.weightx = 1.0;
-				gbc.weighty = 1.0;
-				answerPanel.add(answerLabel[i], gbc);
-
-				gbc = new GridBagConstraints();
-				gbc.gridx = 1;
-				gbc.gridy = i;
-				gbc.weightx = 1.0;
-				gbc.weighty = 1.0;
-				gbc.gridx = 2;
-				gbc.fill = GridBagConstraints.HORIZONTAL;
-				answerPanel.add(answerButtons.get(i), gbc);
-
-				gbc = new GridBagConstraints();
-				gbc.gridx = 3;
-				gbc.gridy = i;
-				gbc.weightx = 1.0;
-				gbc.weighty = 1.0;
-				answerPanel.add(xButtons[i], gbc);
 			}
 		} catch (Exception e) {
 			System.out.printf("create answer comp %s\n", e.getMessage());
+		}
+
+	}
+
+	public void createAnswerComp() {
+		createAnswerButton();
+		createXButton();
+		answerLabel = new JLabel[option];
+		for (int i = 0; i < option; i++) {
+			answerLabel[i] = new JLabel();
+			answerLabel[i].setBorder(null);
+			answerLabel[i].setFont(new Font("微軟正黑體", Font.PLAIN, 16));
+		}
+		answerLabel[0].setText("A.");
+		answerLabel[1].setText("B.");
+		answerLabel[2].setText("C.");
+		answerLabel[3].setText("D.");
+		if (option == 5) {
+			answerLabel[4].setText("E.");
+		}
+
+		answerPanel = new JPanel(new GridBagLayout());
+		answerPanel.setBackground(Color.decode("#F8EFD4"));
+		GridBagConstraints gbc;
+		for (int i = 0; i < option; i++) {
+			gbc = new GridBagConstraints();
+			gbc.gridx = 0;
+			gbc.gridy = i;
+			gbc.weightx = 1.0;
+			gbc.weighty = 1.0;
+			answerPanel.add(answerLabel[i], gbc);
+
+			gbc = new GridBagConstraints();
+			gbc.gridx = 1;
+			gbc.gridy = i;
+			gbc.weightx = 1.0;
+			gbc.weighty = 1.0;
+			gbc.gridx = 2;
+			gbc.fill = GridBagConstraints.HORIZONTAL;
+			answerPanel.add(answerButtons.get(i), gbc);
+
+			gbc = new GridBagConstraints();
+			gbc.gridx = 3;
+			gbc.gridy = i;
+			gbc.weightx = 1.0;
+			gbc.weighty = 1.0;
+			answerPanel.add(xButtons[i], gbc);
 		}
 	}
 
 	public void createQToolPanel() {
 		moreButton = qTool.createMoreButton();
-		playButton = qTool.createPlayButton();
-		pauseButton = qTool.createPauseButton();
+		playButton = qTool.createPlayButton(this);
+		pauseButton = qTool.createPauseButton(this);
 		timeLabel = qTool.createTimer();
 		finishButton = qTool.createFinishButton();
-
-		up_toolPanel = qTool.createUpToolPanel(moreButton, playButton, pauseButton, timeLabel);
+		
+		up_toolPanel = new JPanel();
+		up_toolPanel.setBackground(Color.decode("#F8EFD4"));
+		up_toolPanel.setLayout(new BoxLayout(up_toolPanel, BoxLayout.X_AXIS));
+		up_toolPanel.add(Box.createRigidArea(new Dimension(20, 0)));
+		up_toolPanel.add(moreButton);
+		up_toolPanel.add(Box.createGlue());
+		up_toolPanel.add(playButton);
+		up_toolPanel.add(Box.createRigidArea(new Dimension(15, 0)));
+		up_toolPanel.add(pauseButton);
+		up_toolPanel.add(Box.createRigidArea(new Dimension(30, 0)));
+		up_toolPanel.add(timeLabel);
+		up_toolPanel.add(Box.createRigidArea(new Dimension(30, 0)));
 
 		down_toolPanel = new JPanel();
 		down_toolPanel.setBackground(Color.decode("#F8EFD4"));
 		down_toolPanel.setLayout(new BoxLayout(down_toolPanel, BoxLayout.X_AXIS));
-		down_toolPanel.add(Box.createRigidArea(new Dimension(25, 0)));
+		down_toolPanel.add(Box.createRigidArea(new Dimension(30, 0)));
 		down_toolPanel.add(backButton);
 		down_toolPanel.add(Box.createGlue());
 		down_toolPanel.add(finishButton);
 		down_toolPanel.add(Box.createGlue());
 		down_toolPanel.add(nextButton);
 		down_toolPanel.add(Box.createRigidArea(new Dimension(30, 0)));
+		
 	}
 
-	public void setLayout() {
+	public void setQuestionLayout() {
 		setBackground(Color.decode("#F8EFD4"));
 		setLayout(new BoxLayout(this, BoxLayout.PAGE_AXIS));
 		add(Box.createRigidArea(new Dimension(0, 10)));
@@ -481,8 +546,129 @@ public class QuestionPanel extends JPanel {
 		add(questionPanel);
 		add(Box.createRigidArea(new Dimension(0, 10)));
 		add(answerPanel);
-		add(Box.createGlue());
+		add(Box.createRigidArea(new Dimension(0, 20)));
 		add(down_toolPanel);
 		add(Box.createRigidArea(new Dimension(0, 10)));
+	}
+	
+	public void setPauseLayout() {
+		JPanel pausePanel = new JPanel(new BorderLayout());
+		pausePanel.setBackground(Color.decode("#F8EFD4"));
+		ImageIcon pauseIcon = new ImageIcon(
+				new ImageIcon("images/rest.png").getImage().getScaledInstance(500, 500, Image.SCALE_DEFAULT));
+		JLabel pauseLabel = new JLabel(pauseIcon);
+		pausePanel.add(pauseLabel, BorderLayout.CENTER);
+		
+		removeAll();
+		setBackground(Color.decode("#F8EFD4"));
+		setLayout(new BoxLayout(this, BoxLayout.PAGE_AXIS));
+		add(Box.createRigidArea(new Dimension(0, 15)));
+		add(up_toolPanel);
+		add(pausePanel);
+		add(Box.createGlue());
+		validate();
+		repaint();
+	}
+	
+	public void createButtons() {
+		size = 0;
+		String server = "jdbc:mysql://140.119.19.73:9306/";
+		String database = "MG05";
+		String url = server + database;
+		String username = "MG05";
+		String password = "9mMuzQ";
+		try {
+			Connection conn = DriverManager.getConnection(url, username, password);
+			Statement stat = conn.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
+			String query = "SELECT COUNT(*) FROM " + test + " WHERE Number <> 0";
+			String query2 = "SELECT Number FROM " + test + " WHERE Number <> 0";
+
+			ResultSet result = stat.executeQuery(query);
+			result.next();
+			size = Integer.parseInt(result.getString(1));
+			result.close();
+
+			ResultSet result2 = stat.executeQuery(query2);
+			numButtons = new RoundButton[size];
+			GridLayout gridLayout = new GridLayout(5, 10); // what if number > 50?
+			gridLayout.setHgap(30);
+			gridLayout.setVgap(30);
+			buttonPanel = new JPanel(gridLayout);
+			buttonPanel.setPreferredSize(new Dimension(1000, 500));
+			buttonPanel.setBackground(Color.decode("#F8EFD4"));
+			for (int i = 0; i < size; i++) {
+				result2.next();
+				numButtons[i] = new RoundButton(String.format("%d", result2.getInt(1)));
+				numButtons[i].setPreferredSize(new Dimension(20, 20));
+				numButtons[i].setFont(new Font("微軟正黑體", Font.PLAIN, 14));
+				buttonPanel.add(numButtons[i]);
+			}
+
+			result2.close();
+		} catch (SQLException e) {
+			System.out.println(e.getMessage());
+		}
+	}
+
+	public void addQNumListener(JPanel panel, QuestionPanel questionPanel) {
+		class ClickListener implements ActionListener {
+			CardLayout cardLayout = (CardLayout) (panel.getLayout());
+
+			public void actionPerformed(ActionEvent e) {
+				for (int i = 0; i < numButtons.length; i++) {
+					if (numButtons[i].getModel().isArmed()) {
+						questionPanel.updateNumber(i + 1);
+						questionPanel.repaintQuestionPanel();
+					}
+				}
+				cardLayout.show(panel, "questionPanel");
+			}
+		}
+		
+		ClickListener listener = new ClickListener();
+		for (int i = 0; i < numButtons.length; i++) {
+			numButtons[i].addActionListener(listener);
+		}
+	}
+	
+	public void repaintToolPanel() {
+		removeAll();
+		setToolLayout();
+		validate();
+		repaint();
+	}
+
+	public void setToolLayout() {
+		setLayout(new GridBagLayout());
+		setBackground(Color.decode("#F8EFD4"));
+		GridBagConstraints gbc = new GridBagConstraints();
+		gbc.gridx = 0;
+		gbc.gridy = 0;
+		gbc.weightx = 1.0;
+		gbc.weighty = 1.0;
+		gbc.insets = new Insets(10, 0, 20, 0);
+		gbc.fill = GridBagConstraints.HORIZONTAL;
+		gbc.anchor = GridBagConstraints.NORTH;
+		add(up_toolPanel, gbc);
+
+		gbc = new GridBagConstraints();
+		gbc.gridx = 0;
+		gbc.gridy = 1;
+		gbc.weightx = 1.0;
+		gbc.weighty = 1.0;
+		gbc.insets = new Insets(0, 50, 0, 50);
+		gbc.anchor = GridBagConstraints.CENTER;
+		gbc.fill = GridBagConstraints.BOTH;
+		add(buttonPanel, gbc);
+
+		gbc = new GridBagConstraints();
+		gbc.gridx = 0;
+		gbc.gridy = 2;
+		gbc.weightx = 1.0;
+		gbc.weighty = 1.0;
+		gbc.insets = new Insets(20, 0, 10, 0);
+		gbc.fill = GridBagConstraints.HORIZONTAL;
+		gbc.anchor = GridBagConstraints.SOUTH;
+		add(finishButton, gbc);
 	}
 }

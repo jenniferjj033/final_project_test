@@ -1,9 +1,11 @@
 import java.awt.CardLayout;
 import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.Font;
 import java.awt.Image;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -27,17 +29,17 @@ public class QTool {
 	private boolean timerun = true;
 
 	public QTool() {
-		createMoreButton();
-		createPlayButton();
-		createPauseButton();
-		createTimer();
-		createFinishButton();
+		homeButton = new JButton();
+		moreButton = new JButton(); // "#"
+		playButton = new JButton(); // "|>"
+		pauseButton = new JButton(); // "||"
+		timeLabel = new JLabel();
+		finishButton = new JButton(); // "Fin"
 	}
 
 	public JButton createHomeButton() {
 		ImageIcon homeIcon = new ImageIcon(
 				new ImageIcon("images/homeBtn.png").getImage().getScaledInstance(30, 30, Image.SCALE_DEFAULT));
-		homeButton = new JButton();
 		homeButton.setIcon(homeIcon);
 		homeButton.setHorizontalAlignment(SwingConstants.CENTER);
 		homeButton.setBorder(null);
@@ -46,58 +48,59 @@ public class QTool {
 	}
 
 	public void addHomeButtonListener(JPanel panel) {
-		class ClisckListener implements ActionListener {
+		class ClickListener implements ActionListener {
 			CardLayout cardLayout = (CardLayout) (panel.getLayout());
 
 			public void actionPerformed(ActionEvent e) {
-				cardLayout.show(panel, ""); // show what?!
+				cardLayout.show(panel, "homePanel");
 			}
 		}
+		ClickListener listener = new ClickListener();
+		homeButton.addActionListener(listener);
 	}
 
 	public JButton createMoreButton() {
 		ImageIcon moreIcon = new ImageIcon(
 				new ImageIcon("images/more.png").getImage().getScaledInstance(40, 40, Image.SCALE_DEFAULT));
-		moreButton = new JButton(); // "#"
 		moreButton.setIcon(moreIcon);
 		moreButton.setBorder(null);
 		moreButton.setOpaque(false);
 		moreButton.setContentAreaFilled(false);
 		return this.moreButton;
 	}
-
-	public void addMoreButtonListener(JPanel cardPanel, JPanel actionPanel) {
+	
+	public void addMoreButtonListener(QuestionPanel questionPanel) { // for AnswerKeyPanel
 		class ClickListener implements ActionListener {
-			CardLayout cardLayout = (CardLayout) (cardPanel.getLayout());
+			int click = 0;
 
 			public void actionPerformed(ActionEvent e) {
-				if (actionPanel instanceof QuestionPanel) {
-					cardLayout.show(cardPanel, "2");
-				} else if (actionPanel instanceof QToolPanel) {
-					cardLayout.show(cardPanel, "1");
+				if (click % 2 == 0) {
+					questionPanel.repaintToolPanel();
+				} else {
+					questionPanel.repaintQuestionPanel();
 				}
+				click++;
 			}
 		}
 		ClickListener listener = new ClickListener();
 		moreButton.addActionListener(listener);
 	}
-	
+
 	public void addMoreButtonListener(JPanel panel) { // for AnswerKeyPanel
 		class ClickListener implements ActionListener {
 			CardLayout cardLayout = (CardLayout) (panel.getLayout());
 
 			public void actionPerformed(ActionEvent e) {
-				cardLayout.show(panel, "1");
+				cardLayout.show(panel, "ansListPanel");
 			}
 		}
 		ClickListener listener = new ClickListener();
 		moreButton.addActionListener(listener);
 	}
 
-	public JButton createPlayButton() {
+	public JButton createPlayButton(QuestionPanel questionPanel) {
 		ImageIcon playIcon = new ImageIcon(
 				new ImageIcon("images/play.png").getImage().getScaledInstance(30, 30, Image.SCALE_DEFAULT));
-		playButton = new JButton(); // "|>"
 		playButton.setIcon(playIcon);
 		playButton.setBorder(null);
 		playButton.setOpaque(false);
@@ -105,6 +108,8 @@ public class QTool {
 		class ClickListener implements ActionListener {
 			public void actionPerformed(ActionEvent e) {
 				timerun = true;
+				moreButton.setVisible(true);
+				questionPanel.repaintQuestionPanel();
 			}
 		}
 		ClickListener listener = new ClickListener();
@@ -112,17 +117,19 @@ public class QTool {
 		return this.playButton;
 	}
 
-	public JButton createPauseButton() {
+	public JButton createPauseButton(QuestionPanel questionPanel) {
 		ImageIcon pauseIcon = new ImageIcon(
 				new ImageIcon("images/pause.png").getImage().getScaledInstance(30, 30, Image.SCALE_DEFAULT));
-		pauseButton = new JButton(); // "||"
 		pauseButton.setIcon(pauseIcon);
 		pauseButton.setBorder(null);
 		pauseButton.setOpaque(false);
 		pauseButton.setContentAreaFilled(false);
+		
 		class ClickListener implements ActionListener {
 			public void actionPerformed(ActionEvent e) {
 				timerun = false;
+				moreButton.setVisible(false);
+				questionPanel.setPauseLayout();
 			}
 		}
 		ClickListener listener = new ClickListener();
@@ -133,19 +140,21 @@ public class QTool {
 	public JLabel createTimer() {
 		ImageIcon timerIcon = new ImageIcon(
 				new ImageIcon("images/timer.png").getImage().getScaledInstance(30, 30, Image.SCALE_DEFAULT));
-		timeLabel = new JLabel();
 		timeLabel.setIcon(timerIcon);
 		timeLabel.setVerticalTextPosition(SwingConstants.CENTER);
 		timeLabel.setHorizontalTextPosition(SwingConstants.RIGHT);
-		timeLabel.setText("01:20:00");
-
+		timeLabel.setFont(new Font("·L³n¥¿¶ÂÅé", Font.BOLD, 16));
+		return this.timeLabel;
+	}
+	
+	public void setTime(int size) {
 		Timer timer;
 		int delay = 1000;
 		int period = 1000;
 		timer = new Timer();
 
 		timer.scheduleAtFixedRate(new TimerTask() {
-			int interval = 4800;
+			int interval = size * 96; // 4800s/50Q -> 96s/Q
 
 			public void run() {
 				if (timerun == true) {
@@ -161,14 +170,11 @@ public class QTool {
 
 			}
 		}, delay, period);
-
-		return this.timeLabel;
 	}
 
 	public JButton createFinishButton() {
 		ImageIcon finishIcon = new ImageIcon(
 				new ImageIcon("images/finish.png").getImage().getScaledInstance(30, 30, Image.SCALE_DEFAULT));
-		finishButton = new JButton(); // "Fin"
 		finishButton.setIcon(finishIcon);
 		finishButton.setBorder(null);
 		finishButton.setOpaque(false);
@@ -176,45 +182,30 @@ public class QTool {
 		return this.finishButton;
 	}
 
-	public void addFinishButtonListener(JPanel panel, QuestionPanel questionPanel, String test) {
+	public void addFinishButtonListener(JPanel panel, QuestionPanel questionPanel, ToAnswerPanel toAnswerPanel) {
 		class ClickListener implements ActionListener {
 			CardLayout cardLayout = (CardLayout) (panel.getLayout());
 			Answer answer = questionPanel.getAnswer();
+			String test = questionPanel.getTest();
+			String[] options = { "Finish", "Exit", "Cancel" };
 			
 			public void actionPerformed(ActionEvent e) {
-				int input = JOptionPane.showConfirmDialog(null, "Finish and calculate the score?", "Confirm message",
-						JOptionPane.OK_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE);
+				int input = JOptionPane.showOptionDialog(null, "Finish and calculate the score? / Or Exit this page?", "Confirm message",
+						0, JOptionPane.QUESTION_MESSAGE, null, options, null);
 				if (input == 0) {
-					answer.insertUserAnswers(test);
-					checkAnswer(test);
-					cardLayout.show(panel, "3");
+					//answer.insertUserAnswers(test);
+					//answer.insertIfMarked(test);
+					toAnswerPanel.updateScore(answer.getScore(test));
+					toAnswerPanel.updateTime(questionPanel.getTimeLabel().getText());
+					toAnswerPanel.createPanel();
+					cardLayout.show(panel, "toAnsPanel");
+				} else if (input == 1) {
+					cardLayout.show(panel, "homePanel");
 				}
-			}
-			
-			public Double checkAnswer(String test) {
-				ArrayList<String> userAns = answer.getUserAnswer();
-				ArrayList<String> corrAns = answer.getCorrectAnswers(test);
-				ArrayList<Boolean> ifCorrect = answer.getIfCorrect(corrAns, userAns);
-				return answer.getScore(ifCorrect, corrAns, userAns);
 			}
 		}
 		ClickListener listener = new ClickListener();
 		finishButton.addActionListener(listener);
 	}
 
-	public JPanel createUpToolPanel(JButton moreButton, JButton playButton, JButton pauseButton, JLabel timeLabel) {
-		JPanel up_toolPanel = new JPanel();
-		up_toolPanel.setBackground(Color.decode("#F8EFD4"));
-		up_toolPanel.setLayout(new BoxLayout(up_toolPanel, BoxLayout.X_AXIS));
-		up_toolPanel.add(Box.createRigidArea(new Dimension(20, 0)));
-		up_toolPanel.add(moreButton);
-		up_toolPanel.add(Box.createGlue());
-		up_toolPanel.add(playButton);
-		up_toolPanel.add(Box.createRigidArea(new Dimension(15, 0)));
-		up_toolPanel.add(pauseButton);
-		up_toolPanel.add(Box.createRigidArea(new Dimension(30, 0)));
-		up_toolPanel.add(timeLabel);
-		up_toolPanel.add(Box.createRigidArea(new Dimension(30, 0)));
-		return up_toolPanel;
-	}
 }

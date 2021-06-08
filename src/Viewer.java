@@ -2,6 +2,7 @@ import java.awt.CardLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.IOException;
+import java.sql.SQLException;
 import java.util.ArrayList;
 
 import javax.swing.JFrame;
@@ -11,77 +12,84 @@ import javax.swing.JMenuItem;
 import javax.swing.JPanel;
 
 public class Viewer {
-
-	public static void main(String[] args) throws IOException {
-
+	
+	public static void main(String[] args) throws SQLException {
 		JFrame frame = new JFrame();
-		CardLayout cardLayout0 = new CardLayout();
-		JPanel allCard = new JPanel(cardLayout0);
-		CardLayout cardLayout1 = new CardLayout();
-		JPanel loginCard = new JPanel(cardLayout1);
-		CardLayout cardLayout2 = new CardLayout();
-		JPanel questionCard = new JPanel(cardLayout2);
-		CardLayout cardLayout3 = new CardLayout();
-		JPanel answerCard = new JPanel(cardLayout3);
-		CardLayout cardLayout4 = new CardLayout();
-		JPanel noteCard = new JPanel(cardLayout4);
-
+		CardLayout cardLayout = new CardLayout();
+		JPanel card = new JPanel(cardLayout);
+		
+		TitlePanel titlePanel = new TitlePanel();
+		titlePanel.addButtonListener(card);
 		SignUpPanel signUpPanel = new SignUpPanel();
-		signUpPanel.addLoginListener(loginCard);
-		signUpPanel.addSignUpListener(loginCard);
+		signUpPanel.addLoginListener(card);
+		signUpPanel.addSignUpListener(card);
 		LoginPanel loginPanel = new LoginPanel();
-		loginPanel.addLoginListener(loginCard);
-		loginPanel.addSignUpListener(loginCard);
+		loginPanel.addLoginListener(card);
+		loginPanel.addSignUpListener(card);
 		HomePanel homePanel = new HomePanel();
-		homePanel.addTestListener(allCard);
+		homePanel.addUserListener(card);
+		homePanel.addTestListener(card);
+		homePanel.addNoteListener(card);
+		// addButtonListener
 
 		RangePanel rangePanel = new RangePanel();
 		InstructionPanel instructionPanel = new InstructionPanel();
 		String test = "TestM"; // «Ý­×
+		
+		ToAnswerPanel toAnsPanel = new ToAnswerPanel();
 		QuestionPanel questionPanel = new QuestionPanel(test);
-		questionPanel.getQTool().addMoreButtonListener(questionCard, questionPanel);
-		questionPanel.getQTool().addFinishButtonListener(questionCard, questionPanel, test);
-		QToolPanel qToolPanel = new QToolPanel(test);
-		qToolPanel.getQTool().addMoreButtonListener(questionCard, qToolPanel);
-		qToolPanel.getQTool().addFinishButtonListener(questionCard, questionPanel, test);
-		qToolPanel.addQNumListener(questionCard, questionPanel);
-		goforAnswerPanel toAnsPanel = new goforAnswerPanel(questionPanel);
-		toAnsPanel.addAnswerListener(allCard);
-
+		
 		AnswerKeyPanel answerKeyPanel = new AnswerKeyPanel(test);
-		answerKeyPanel.getQTool().addMoreButtonListener(answerCard);
-		QListPanel qListPanel = new QListPanel(test);
-		qListPanel.addQuestionButtonListener(answerCard, answerKeyPanel);
+		AnswerListPanel ansListPanel = new AnswerListPanel(test);
 		
+		AnswerKeyPanel noteKeyPanel = new AnswerKeyPanel(test);
+		AnswerListPanel noteQPanel = new AnswerListPanel(test);
+		SubjectPanel subjectPanel = new SubjectPanel();
 		
+		rangePanel.createStartBtn(card);
+		rangePanel.addBackListener(card);
+		instructionPanel.addButtonListener(card, questionPanel);
+		questionPanel.getQTool().addMoreButtonListener(questionPanel);
+		questionPanel.getQTool().addFinishButtonListener(card, questionPanel, toAnsPanel);
+		questionPanel.addQNumListener(card, questionPanel);
+		toAnsPanel.addAnswerListener(card);
+		
+		answerKeyPanel.getQTool().addMoreButtonListener(card);
+		ansListPanel.addQuestionButtonListener(card, answerKeyPanel);
+		ansListPanel.getQTool().addHomeButtonListener(card);
+		
+		noteKeyPanel.getQTool().addMoreButtonListener(card);
+		noteQPanel.addQuestionButtonListener(card, noteKeyPanel);
+		noteQPanel.addBackListener(card);
+		noteQPanel.getQTool().addHomeButtonListener(card);
+		subjectPanel.addButtonListener(card, noteQPanel);
+		subjectPanel.getQTool().addHomeButtonListener(card);
 
-		cardLayout1.show(loginCard, "1");
-		loginCard.add(loginPanel, "1");
-		loginCard.add(signUpPanel, "2");
-		loginCard.add(homePanel, "3");
+		card.add(titlePanel, "titlePanel");
+		card.add(loginPanel, "loginPanel");
+		card.add(signUpPanel, "signUpPanel");
+		card.add(homePanel, "homePanel");
 
-		cardLayout2.show(questionCard, "1");
-		questionCard.add(questionPanel, "1");
-		questionCard.add(qToolPanel, "2");
-		questionCard.add(toAnsPanel, "3");
+		card.add(rangePanel, "rangePanel");
+		card.add(instructionPanel, "instructionPanel");
+		card.add(questionPanel, "questionPanel");
+		card.add(toAnsPanel, "toAnsPanel");
 
-		cardLayout3.show(answerCard, "1");
-		answerCard.add(qListPanel, "1");
-		answerCard.add(answerKeyPanel, "2");
+		card.add(ansListPanel, "ansListPanel");
+		card.add(answerKeyPanel, "answerKeyPanel");
+		
+		card.add(subjectPanel, "subjectPanel");
+		card.add(noteQPanel, "noteQPanel");
+		card.add(noteKeyPanel, "noteKeyPanel");
 
-		/*cardLayout0.show(allCard, "1");
-		allCard.add(loginCard, "1");
-		allCard.add(questionCard, "2");
-		allCard.add(answerCard, "3");
-		allCard.add(noteCard, "4");*/
-
-		frame.add(questionCard);
+		cardLayout.show(card, "titlePanel");
+		frame.add(card);
 		frame.setTitle("College Entrance Examination");
-		frame.setSize(800, 500);
-		// frame.setExtendedState(JFrame.MAXIMIZED_BOTH);
+		//frame.setSize(1060, 650);
+		frame.setSize(900, 700);
 		frame.setVisible(true);
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
 	}
-
+	
 }
