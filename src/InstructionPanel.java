@@ -1,4 +1,3 @@
-import java.awt.BorderLayout;
 import java.awt.CardLayout;
 import java.awt.Color;
 import java.awt.Component;
@@ -6,25 +5,24 @@ import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
-import java.awt.GridLayout;
+import java.awt.Image;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.util.Timer;
-import java.util.TimerTask;
 
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
+import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.SwingConstants;
 import javax.swing.border.Border;
-import javax.swing.border.LineBorder;
 
 import style.BubbleBorder;
 
@@ -33,116 +31,128 @@ public class InstructionPanel extends JPanel {
 	private static final int FRAME_HEIGHT = 400;
 
 	private JButton startButton, replaceButton;
-	private JLabel yearANDtype, subject, notice,time,count,first,second,way;
+	private JLabel yearANDtype, titleLabel, notice, time, count, first, second, way;
 	private JPanel titlePanel, noticePanel;
-
+	private Connection conn;
+	
 	public InstructionPanel() {
+		try {
+			String server = "jdbc:mysql://140.119.19.73:9306/";
+			String database = "MG05";
+			String url = server + database
+					+ "?useUnicode=true&characterEncoding=UTF-8&autoReconnect=true&failOverReadOnly=false";
+			String username = "MG05";
+			String password = "9mMuzQ";
+			conn = DriverManager.getConnection(url, username, password);
+		} catch (SQLException e) {
+			System.out.println("<Instruction Panel> constructor: " + e.getMessage());
+		}
+		
 		setSize(FRAME_WIDTH, FRAME_HEIGHT);
 		creaLabelComp();
 		creaButton();
 		creaTotalPanel();
 
 	}
+	
+	public void updateLabel(QuestionPanel question) {
+		question.initialize();
+		question.getQTool().setTime(question.getAnswer().getNumbers().size());
+		Viewer.addQuestionListener();
+		
+		titleLabel.setText(QuestionPanel.getSubject());
+		time.setText(String.format("考試時間： %d分鐘" , (question.getAnswer().getNumbers().size() * 96 / 60 % 60)));
+		first.setText(String.format("-第壹部分： 單選題共%d題", question.getAnswer().getNotMCQ()));
+		second.setText(String.format("-第貳部分： 複選題共%d題", (question.getAnswer().getNumbers().size() - question.getAnswer().getNotMCQ())));
+	}
 
 	public void creaLabelComp() {
-		yearANDtype = new JLabel("公民考科 - 108學年度指定考試科目");
-		subject = new JLabel("公民考科");
-		
-		titlePanel = new JPanel();
-		titlePanel.setBackground(Color.decode("#F8EFD4"));
-		titlePanel.add(yearANDtype);
-		titlePanel.add(subject);
+		ImageIcon testIcon = new ImageIcon(
+				new ImageIcon("images/test.png").getImage().getScaledInstance(60, 60, Image.SCALE_DEFAULT));
+		titleLabel = new JLabel("公民考科", testIcon, SwingConstants.LEFT);
+		titleLabel.setFont(new Font("Lucida Handwriting", Font.BOLD, 40));
+		titleLabel.setVerticalTextPosition(SwingConstants.CENTER);
+		titleLabel.setHorizontalTextPosition(SwingConstants.RIGHT);
+		titleLabel.setForeground(new Color(139, 69, 19));
 
-		notice=new JLabel("<html><body><br></br><br>-作答注意事項-</br></body></html>",SwingConstants.CENTER);
+		notice = new JLabel("<html><body><br></br><br>-作答注意事項-</br></body></html>", SwingConstants.CENTER);
 		notice.setAlignmentX(Component.CENTER_ALIGNMENT);
-		
-		time=new JLabel("<html><body><br>考試時間： 80分鐘</br></body></html>",SwingConstants.CENTER);
+
+		time = new JLabel("<html><body><br>考試時間： 80分鐘</br></body></html>", SwingConstants.CENTER);
 		time.setAlignmentX(Component.CENTER_ALIGNMENT);
-		
-		count=new JLabel("題型題數：",SwingConstants.CENTER);
+
+		count = new JLabel("題型題數：", SwingConstants.CENTER);
 		count.setAlignmentX(Component.CENTER_ALIGNMENT);
-		
-		first=new JLabel("-第壹部分： 單選題共38題",SwingConstants.CENTER);
+
+		first = new JLabel("-第壹部分： 單選題共38題", SwingConstants.CENTER);
 		first.setAlignmentX(Component.CENTER_ALIGNMENT);
-		
-		second=new JLabel("-第貳部分:  複選題共12題",SwingConstants.CENTER);
+
+		second = new JLabel("-第貳部分:  複選題共12題", SwingConstants.CENTER);
 		second.setAlignmentX(Component.CENTER_ALIGNMENT);
-		
-		way=new JLabel("作答方式:  略",SwingConstants.CENTER);
+
+		way = new JLabel("作答方式： 略", SwingConstants.CENTER);
 		way.setAlignmentX(Component.CENTER_ALIGNMENT);
-		
-		Font font=new Font("微軟正黑體",Font.BOLD,30);
-		yearANDtype.setFont(font);
-		Color color=new Color(139,69,19);
-		yearANDtype.setForeground(color);
-		Border empty = BorderFactory.createEmptyBorder();
-		yearANDtype.setBorder(empty);
-		yearANDtype.setBackground(Color.decode("#F8EFD4"));
-		
-		subject.setFont(font);
-		subject.setBackground(new Color(255,239,213));
-		subject.setForeground(color);
-		subject.setBackground(Color.decode("#F8EFD4"));
-		
-		Font font1=new Font("微軟正黑體",Font.BOLD,25);
-		notice.setFont(font1);
-		notice.setBackground(new Color(255,239,213));
+
+		Color color = new Color(139, 69, 19);
+		Font font = new Font("微軟正黑體", Font.BOLD, 25);
+		notice.setFont(font);
+		notice.setBackground(new Color(255, 239, 213));
 		notice.setForeground(color);
 		notice.setBackground(Color.decode("#F8EFD4"));
-		
-		time.setFont(font1);
-		time.setBackground(new Color(255,239,213));
+
+		time.setFont(font);
+		time.setBackground(new Color(255, 239, 213));
 		time.setForeground(color);
 		time.setBackground(Color.decode("#F8EFD4"));
-		
-		count.setFont(font1);
-		count.setBackground(new Color(255,239,213));
+
+		count.setFont(font);
+		count.setBackground(new Color(255, 239, 213));
 		count.setForeground(color);
 		count.setBackground(Color.decode("#F8EFD4"));
-		
-		first.setFont(font1);
-		first.setBackground(new Color(255,239,213));
+
+		first.setFont(font);
+		first.setBackground(new Color(255, 239, 213));
 		first.setForeground(color);
 		first.setBackground(Color.decode("#F8EFD4"));
-		
-		second.setFont(font1);
-		second.setBackground(new Color(255,239,213));
+
+		second.setFont(font);
+		second.setBackground(new Color(255, 239, 213));
 		second.setForeground(color);
 		second.setBackground(Color.decode("#F8EFD4"));
-		
-		way.setFont(font1);
-		way.setBackground(new Color(255,239,213));
+
+		way.setFont(font);
+		way.setBackground(new Color(255, 239, 213));
 		way.setForeground(color);
 		way.setBackground(Color.decode("#F8EFD4"));
-		
+
 		noticePanel = new JPanel();
 		noticePanel.setLayout(new BoxLayout(noticePanel, BoxLayout.Y_AXIS));
 		noticePanel.add(Box.createGlue());
 		noticePanel.add(notice);
-		noticePanel.add(Box.createRigidArea(new Dimension(0, 10)));
+		noticePanel.add(Box.createRigidArea(new Dimension(0, 20)));
 		noticePanel.add(time);
-		noticePanel.add(Box.createRigidArea(new Dimension(0, 10)));
+		noticePanel.add(Box.createRigidArea(new Dimension(0, 15)));
 		noticePanel.add(count);
-		noticePanel.add(Box.createRigidArea(new Dimension(0, 10)));
+		noticePanel.add(Box.createRigidArea(new Dimension(0, 15)));
 		noticePanel.add(first);
-		noticePanel.add(Box.createRigidArea(new Dimension(0, 10)));
+		noticePanel.add(Box.createRigidArea(new Dimension(0, 15)));
 		noticePanel.add(second);
-		noticePanel.add(Box.createRigidArea(new Dimension(0, 10)));
+		noticePanel.add(Box.createRigidArea(new Dimension(0, 15)));
 		noticePanel.add(way);
-		noticePanel.add(Box.createRigidArea(new Dimension(0, 100)));
+		noticePanel.add(Box.createRigidArea(new Dimension(0, 120)));
 		noticePanel.setBackground(Color.decode("#F8EFD4"));
 		noticePanel.setPreferredSize(new Dimension(500, 500));
 	}
 
 	public void creaButton() {
 		startButton = new JButton("Start");
-		Font font=new Font("微軟正黑體",Font.BOLD,20);
+		Font font = new Font("微軟正黑體", Font.BOLD, 20);
 		startButton.setFont(font);
 		startButton.setContentAreaFilled(false);
 		startButton.setForeground(new Color(139, 69, 19));
 		startButton.setBorder(new BubbleBorder(Color.decode("#E88D67"), 2, 30, 0));
 		startButton.setPreferredSize(new Dimension(120, 30));
-		
+
 		replaceButton = new JButton("Back");
 		replaceButton.setFont(font);
 		replaceButton.setContentAreaFilled(false);
@@ -152,27 +162,36 @@ public class InstructionPanel extends JPanel {
 
 	}
 
-	public void addButtonListener(JPanel panel, QuestionPanel question) {
+	public void addButtonListener(JPanel panel) {
 		class ReplaceListener implements ActionListener {
 			public void actionPerformed(ActionEvent e) {
 				CardLayout card = (CardLayout) (panel.getLayout());
 				card.show(panel, "rangePanel");
+				
+				try {
+					String query = "DELETE FROM `UserQuestion` WHERE UserID = ? and TestID = ?";
+					PreparedStatement deleteQ = conn.prepareStatement(query);
+					deleteQ.setString(1, LoginPanel.getUserID());
+					deleteQ.setInt(2, RangePanel.getTestID());
+
+					deleteQ.executeUpdate();
+				} catch (SQLException e1) {
+
+				}
 			}
 		}
 		ActionListener listenerR = new ReplaceListener();
 		replaceButton.addActionListener(listenerR);
-		
+
 		class StartListener implements ActionListener {
 			public void actionPerformed(ActionEvent e) {
 				CardLayout card = (CardLayout) (panel.getLayout());
-				question.getQTool().setTime(question.getAnswer().getNumbers().size());
 				card.show(panel, "questionPanel");
 			}
 		}
 		ActionListener listenerS = new StartListener();
 		startButton.addActionListener(listenerS);
 	}
-	
 
 	public void creaTotalPanel() {
 		JPanel down_toolPanel = new JPanel();
@@ -193,7 +212,7 @@ public class InstructionPanel extends JPanel {
 		gbc.weighty = 1.0;
 		gbc.insets = new Insets(50, 0, 0, 0);
 		gbc.anchor = GridBagConstraints.PAGE_START;
-		add(titlePanel, gbc);
+		add(titleLabel, gbc);
 
 		gbc = new GridBagConstraints();
 		gbc.gridx = 0;
@@ -213,6 +232,6 @@ public class InstructionPanel extends JPanel {
 		gbc.fill = GridBagConstraints.HORIZONTAL;
 		gbc.anchor = GridBagConstraints.PAGE_END;
 		add(down_toolPanel, gbc);
-		
+
 	}
 }

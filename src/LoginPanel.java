@@ -18,24 +18,24 @@ public class LoginPanel extends JPanel {
 	private JButton loginButton;
 	private JButton signUpButton;
 	private Connection conn;
-	private String userID;
+	private static String userID;
 
 	public LoginPanel() {
 		try {
 			String server = "jdbc:mysql://140.119.19.73:9306/";
 			String database = "MG05";
-			String url = server + database;
+			String url = server + database + "?useUnicode=true&characterEncoding=UTF-8&autoReconnect=true&failOverReadOnly=false";
 			String username = "MG05";
 			String password = "9mMuzQ";
 			conn = DriverManager.getConnection(url, username, password);
 		} catch (Exception e) {
-			e.getMessage();
+			System.out.println("<LoginPanel> constructor: " + e.getMessage());
 		}
 		createComp();
 	}
 	
-	public String getUserID() {
-		return this.userID;
+	public static String getUserID() {
+		return userID;
 	}
 
 	public void createComp() {
@@ -153,10 +153,10 @@ public class LoginPanel extends JPanel {
 
 					String query1 = "SELECT COUNT(*) FROM Member WHERE ID ='" + userID + "'";
 					stat.execute(query1);
-
 					ResultSet result = stat.getResultSet();
 					result.next();
 					int count = Integer.parseInt(result.getString(1));
+					
 					if (count != 0) {
 						String query = "SELECT Password FROM Member WHERE ID ='" + userID + "'";
 						stat.execute(query);
@@ -177,7 +177,7 @@ public class LoginPanel extends JPanel {
 						JOptionPane.showMessageDialog(null, "Wrong username!", "Error", JOptionPane.ERROR_MESSAGE);
 					}
 				} catch (Exception exception) {
-					exception.getMessage();
+					System.out.println("<LoginPanel> loginBtn listener" + exception.getMessage());
 				}
 
 			}
@@ -185,7 +185,7 @@ public class LoginPanel extends JPanel {
 		ActionListener listener = new ButtonListener();
 		loginButton.addActionListener(listener);
 	}
-
+	
 	public void addSignUpListener(JPanel panel) {
 		class ClickListener implements ActionListener {
 			CardLayout cardLayout = (CardLayout) (panel.getLayout());

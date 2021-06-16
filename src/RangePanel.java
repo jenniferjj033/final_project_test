@@ -41,13 +41,27 @@ public class RangePanel extends JPanel {
 			subject_Bio, subject_Che, subject_Phy;
 	private JCheckBox type_Single, type_Multiple, type_Combination;
 	private JCheckBox degree_Easy, degree_Medium, degree_Hard;
-	private JComboBox count;
+	private JComboBox<Integer> count;
 	private JButton startBtn, backButton;
+	private ButtonGroup modeGroup, testGroup, subjectGroup;
 
+	private String userID;
+	private static int testIDNow = 0;
 	private ResultSet result = null;
-	String tableName = "test";
+	private Connection conn;
 
-	public RangePanel() throws SQLException {
+	public RangePanel() {
+		try {
+			String server = "jdbc:mysql://140.119.19.73:9306/";
+			String database = "MG05";
+			String url = server + database
+					+ "?useUnicode=true&characterEncoding=UTF-8&autoReconnect=true&failOverReadOnly=false";
+			String username = "MG05";
+			String password = "9mMuzQ";
+			conn = DriverManager.getConnection(url, username, password);
+		} catch (SQLException e) {
+			System.out.println("<Range Panel> constructor: " + e.getMessage());
+		}
 
 		startBtn = new JButton("Done");
 		startBtn.setBackground(Color.decode("#F8EFD4"));
@@ -97,7 +111,7 @@ public class RangePanel extends JPanel {
 		mode_Review.setBackground(Color.decode("#F8EFD4"));
 		mode_New.setBackground(Color.decode("#F8EFD4"));
 
-		ButtonGroup modeGroup = new ButtonGroup();
+		modeGroup = new ButtonGroup();
 		modeGroup.add(mode_Review);
 		modeGroup.add(mode_New);
 
@@ -137,11 +151,11 @@ public class RangePanel extends JPanel {
 		test_GSAT.setBackground(Color.decode("#F8EFD4"));
 		test_AST.setBackground(Color.decode("#F8EFD4"));
 
-		ButtonGroup testGroup = new ButtonGroup();
+		testGroup = new ButtonGroup();
 		testGroup.add(test_GSAT);
 		testGroup.add(test_AST);
 
-		Font font1 = new Font("微軟正黑體", Font.BOLD, 16);
+		Font font1 = new Font("微軟正黑體", Font.BOLD, 22);
 		test_GSAT.setFont(font1);
 		test_GSAT.setBackground(new Color(255, 239, 213));
 		Color color1 = new Color(139, 69, 19);
@@ -219,7 +233,7 @@ public class RangePanel extends JPanel {
 		subject_Che = new JRadioButton("化學");
 		subject_Phy = new JRadioButton("物理");
 
-		ButtonGroup subjectGroup = new ButtonGroup();
+		subjectGroup = new ButtonGroup();
 		subjectGroup.add(subject_Chi);
 		subjectGroup.add(subject_Eng);
 		subjectGroup.add(subject_MathA);
@@ -428,15 +442,18 @@ public class RangePanel extends JPanel {
 	}
 
 	public void creaCountComp() {
-		count = new JComboBox();
-		// count.addItem("---請選擇---");
+		count = new JComboBox<Integer>();
 		count.addItem(5);
 		count.addItem(10);
+		count.addItem(15);
+		count.addItem(20);
+		count.addItem(25);
+		count.addItem(30);
+		count.addItem(35);
+		count.addItem(40);
+		count.addItem(45);
+		count.addItem(50);
 		count.setBackground(Color.decode("#F8EFD4"));
-		// count.addItem(20);
-		// count.addItem(30);
-		// count.addItem(40);
-		// count.addItem(50);
 
 		Font font = new Font("微軟正黑體", Font.BOLD, 16);
 		Color color = new Color(139, 69, 19);
@@ -458,251 +475,114 @@ public class RangePanel extends JPanel {
 		countPanel.setPreferredSize(new Dimension(PANEL_WIDTH, PANEL_HEIGHT));
 	}
 
-	public void createStartBtn(JPanel panel1) {
+	public void createStartBtn(JPanel panel1, InstructionPanel instruction, QuestionPanel question) {
 
 		try {
-			String server = "jdbc:mysql://140.119.19.73:9306/";
-			String database = "MG05";
-			String url = server + database + "?useUnicode=true&characterEncoding=UTF-8";
-			String username = "MG05";
-			String password = "9mMuzQ";
-			Connection conn = DriverManager.getConnection(url, username, password);
-			Statement stat = conn.createStatement();
-
 			String selectTitle = "SELECT * FROM `Society` WHERE ";
-			String qSingle = "MCQ!=\"TRUE\"";
-			String qNotCom = "Groupnumber=0";
-			String qMultiple = "MCQ=\"TRUE\"";
-			String qHard = "Degree<=30";
-			String qMedium = "(Degree>=31 and Degree<=70)";
-			String qEasy = "Degree >=71";
-			String qCom = "Groupnumber!=0";
+			String qSingle = "MCQ = 'FALSE'";
+			String qMultiple = "MCQ = 'TRUE'";
+			String qHard = "Degree <= '30'";
+			String qMedium = "(Degree > '30' AND Degree <= '70')";
+			String qEasy = "Degree > '70'";
+			String qCom = "Groupnumber <> '0'";
+			String nine = "Year = '109'";
+			String eight = "Year = '108'";
+			Statement stat = conn.createStatement();
 
 			class ClickListener implements ActionListener {
 				public void actionPerformed(ActionEvent e) {
-
-					try {
-
-						if (type_Single.isSelected() && type_Multiple.isSelected()) {
-							tableName = type_Single.getText() + type_Multiple.getText() + "/" + degree_Hard.getText()
-									+ degree_Medium.getText() + degree_Easy.getText();
-							if (degree_Hard.isSelected() && degree_Medium.isSelected() && degree_Easy.isSelected()) {
-								result = stat.executeQuery(String.format("%s%s ", selectTitle, qNotCom));
-								showResultSet(result);
-							} else if (degree_Hard.isSelected() && degree_Medium.isSelected()) {
-								tableName = type_Single.getText() + type_Multiple.getText() + "/"
-										+ degree_Hard.getText() + degree_Medium.getText();
-								result = stat.executeQuery(
-										String.format("%s%s and (%s or %s) ", selectTitle, qNotCom, qHard, qMedium));
-								showResultSet(result);
-							} else if (degree_Medium.isSelected() && degree_Easy.isSelected()) {
-								tableName = type_Single.getText() + type_Multiple.getText() + "/"
-										+ degree_Medium.getText() + degree_Easy.getText();
-								result = stat.executeQuery(
-										String.format("%s%s and (%s or %s) ", selectTitle, qNotCom, qMedium, qEasy));
-								showResultSet(result);
-							} else if (degree_Hard.isSelected() && degree_Easy.isSelected()) {
-								tableName = type_Single.getText() + type_Multiple.getText() + "/"
-										+ degree_Hard.getText() + degree_Easy.getText();
-								result = stat.executeQuery(
-										String.format("%s%s and (%s or %s) ", selectTitle, qNotCom, qHard, qEasy));
-								showResultSet(result);
-							} else if (degree_Hard.isSelected()) {
-								tableName = type_Single.getText() + type_Multiple.getText() + "/"
-										+ degree_Hard.getText();
-								result = stat.executeQuery(String.format("%s%s and %s ", selectTitle, qNotCom, qHard));
-								showResultSet(result);
-							} else if (degree_Medium.isSelected()) {
-								tableName = type_Single.getText() + type_Multiple.getText() + "/"
-										+ degree_Medium.getText();
-								result = stat
-										.executeQuery(String.format("%s%s and %s ", selectTitle, qNotCom, qMedium));
-								showResultSet(result);
-							} else if (degree_Easy.isSelected()) {
-								tableName = type_Single.getText() + type_Multiple.getText() + "/"
-										+ degree_Easy.getText();
-								result = stat.executeQuery(String.format("%s%s and %s ", selectTitle, qNotCom, qEasy));
-								showResultSet(result);
-							} else {
-								JOptionPane.showMessageDialog(null, "請選擇難易度！", "Error", JOptionPane.ERROR_MESSAGE);
-							}
-						} else if (type_Single.isSelected()) {
-							if (degree_Hard.isSelected() && degree_Medium.isSelected() && degree_Easy.isSelected()) {
-								tableName = type_Single.getText() + "/" + degree_Hard.getText()
-										+ degree_Medium.getText() + degree_Easy.getText();
-								result = stat
-										.executeQuery(String.format("%s%s and %s ", selectTitle, qNotCom, qSingle));
-								showResultSet(result);
-							} else if (degree_Hard.isSelected() && degree_Medium.isSelected()) {
-								tableName = type_Single.getText() + "/" + degree_Hard.getText()
-										+ degree_Medium.getText();
-								result = stat.executeQuery(String.format("%s%s and %s and (%s or %s) ", selectTitle,
-										qNotCom, qSingle, qHard, qMedium));
-								showResultSet(result);
-							} else if (degree_Medium.isSelected() && degree_Easy.isSelected()) {
-								tableName = type_Single.getText() + "/" + degree_Medium.getText()
-										+ degree_Easy.getText();
-								result = stat.executeQuery(String.format("%s%s and %s and (%s or %s) ", selectTitle,
-										qNotCom, qSingle, qMedium, qEasy));
-								showResultSet(result);
-							} else if (degree_Hard.isSelected() && degree_Easy.isSelected()) {
-								tableName = type_Single.getText() + "/" + degree_Hard.getText() + degree_Easy.getText();
-								result = stat.executeQuery(String.format("%s%s and %s and (%s or %s) ", selectTitle,
-										qNotCom, qSingle, qHard, qEasy));
-								showResultSet(result);
-							} else if (degree_Hard.isSelected()) {
-								tableName = type_Single.getText() + "/" + degree_Hard.getText();
-								result = stat.executeQuery(
-										String.format("%s%s and %s and %s", selectTitle, qNotCom, qSingle, qHard));
-								showResultSet(result);
-							} else if (degree_Medium.isSelected()) {
-								tableName = type_Single.getText() + "/" + degree_Medium.getText();
-								result = stat.executeQuery(
-										String.format("%s%s and %s and %s", selectTitle, qNotCom, qSingle, qMedium));
-								showResultSet(result);
-							} else if (degree_Easy.isSelected()) {
-								tableName = type_Single.getText() + "/" + degree_Easy.getText();
-								result = stat.executeQuery(
-										String.format("%s%s and %s and %s", selectTitle, qNotCom, qSingle, qEasy));
-								showResultSet(result);
-							} else {
-								JOptionPane.showMessageDialog(null, "請選擇難易度！", "Error", JOptionPane.ERROR_MESSAGE);
-							}
-						} else if (type_Multiple.isSelected()) {
-							if (degree_Hard.isSelected() && degree_Medium.isSelected() && degree_Easy.isSelected()) {
-								result = stat
-										.executeQuery(String.format("%s%s and %s ", selectTitle, qNotCom, qMultiple));
-								showResultSet(result);
-								tableName = type_Multiple.getText() + "/" + degree_Hard.getText()
-										+ degree_Medium.getText() + degree_Easy.getText();
-							} else if (degree_Hard.isSelected() && degree_Medium.isSelected()) {
-								result = stat.executeQuery(String.format("%s%s and %s and (%s or %s) ", selectTitle,
-										qNotCom, qMultiple, qHard, qMedium));
-								showResultSet(result);
-								tableName = type_Multiple.getText() + "/" + degree_Hard.getText()
-										+ degree_Medium.getText();
-							} else if (degree_Medium.isSelected() && degree_Easy.isSelected()) {
-								result = stat.executeQuery(String.format("%s%s and %s and (%s or %s) ", selectTitle,
-										qNotCom, qMultiple, qMedium, qEasy));
-								showResultSet(result);
-								tableName = type_Multiple.getText() + "/" + degree_Medium.getText()
-										+ degree_Easy.getText();
-							} else if (degree_Hard.isSelected() && degree_Easy.isSelected()) {
-								result = stat.executeQuery(String.format("%s%s and %s and (%s or %s) ", selectTitle,
-										qNotCom, qMultiple, qHard, qEasy));
-								showResultSet(result);
-								tableName = type_Multiple.getText() + "/" + degree_Hard.getText()
-										+ degree_Easy.getText();
-							} else if (degree_Hard.isSelected()) {
-								result = stat.executeQuery(
-										String.format("%s%s and %s and %s", selectTitle, qNotCom, qMultiple, qHard));
-								showResultSet(result);
-								tableName = type_Multiple.getText() + "/" + degree_Hard.getText();
-							} else if (degree_Medium.isSelected()) {
-								result = stat.executeQuery(
-										String.format("%s%s and %s and %s", selectTitle, qNotCom, qMultiple, qMedium));
-								showResultSet(result);
-								tableName = type_Multiple.getText() + "/" + degree_Medium.getText();
-							} else if (degree_Easy.isSelected()) {
-								result = stat.executeQuery(
-										String.format("%s%s and %s and %s", selectTitle, qNotCom, qMultiple, qEasy));
-								showResultSet(result);
-								tableName = type_Multiple.getText() + "/" + degree_Easy.getText();
-							} else {
-								JOptionPane.showMessageDialog(null, "請選擇難易度！", "Error", JOptionPane.ERROR_MESSAGE);
-							}
-						} else if (type_Combination.isSelected()) {
-							if (degree_Hard.isSelected() && degree_Medium.isSelected() && degree_Easy.isSelected()) {
-								result = stat.executeQuery(String.format("%s%s", selectTitle, qCom));
-								showResultSet(result);
-							} else if (degree_Hard.isSelected() && degree_Medium.isSelected()) {
-								result = stat.executeQuery(
-										String.format("%s%s and (%s or %s) ", selectTitle, qCom, qHard, qMedium));
-								showResultSet(result);
-							} else if (degree_Medium.isSelected() && degree_Easy.isSelected()) {
-								result = stat.executeQuery(
-										String.format("%s%s and (%s or %s) ", selectTitle, qCom, qMedium, qEasy));
-								showResultSet(result);
-							} else if (degree_Hard.isSelected() && degree_Easy.isSelected()) {
-								result = stat.executeQuery(
-										String.format("%s%s and (%s or %s) ", selectTitle, qCom, qHard, qEasy));
-								showResultSet(result);
-							} else if (degree_Hard.isSelected()) {
-								result = stat.executeQuery(String.format("%s%s and %s", selectTitle, qCom, qHard));
-								showResultSet(result);
-							} else if (degree_Medium.isSelected()) {
-								result = stat.executeQuery(String.format("%s%s and %s", selectTitle, qCom, qMedium));
-								showResultSet(result);
-							} else if (degree_Easy.isSelected()) {
-								result = stat.executeQuery(String.format("%s%s and %s", selectTitle, qCom, qEasy));
-								showResultSet(result);
-							} else {
-								JOptionPane.showMessageDialog(null, "請選擇難易度！", "Error", JOptionPane.ERROR_MESSAGE);
-							}
-						} else if (type_Single.isSelected() && type_Combination.isSelected()) {
-							if (degree_Hard.isSelected() && degree_Medium.isSelected() && degree_Easy.isSelected()) {
-								result = stat
-										.executeQuery(String.format("%s%s and %s ", selectTitle, qNotCom, qMultiple));
-								showResultSet(result);
-							} else if (degree_Hard.isSelected() && degree_Medium.isSelected()) {
-								result = stat.executeQuery(String.format("%s%s and %s and (%s or %s) ", selectTitle,
-										qNotCom, qMultiple, qHard, qMedium));
-								showResultSet(result);
-							} else if (degree_Medium.isSelected() && degree_Easy.isSelected()) {
-								result = stat.executeQuery(String.format("%s%s and %s and (%s or %s) ", selectTitle,
-										qNotCom, qMultiple, qMedium, qEasy));
-								showResultSet(result);
-							} else if (degree_Hard.isSelected() && degree_Easy.isSelected()) {
-								result = stat.executeQuery(String.format("%s%s and %s and (%s or %s) ", selectTitle,
-										qNotCom, qMultiple, qHard, qEasy));
-								showResultSet(result);
-							} else if (degree_Hard.isSelected()) {
-								result = stat.executeQuery(
-										String.format("%s%s and %s and %s", selectTitle, qNotCom, qMultiple, qHard));
-								showResultSet(result);
-							} else if (degree_Medium.isSelected()) {
-								result = stat.executeQuery(
-										String.format("%s%s and %s and %s", selectTitle, qNotCom, qMultiple, qMedium));
-								showResultSet(result);
-							} else if (degree_Easy.isSelected()) {
-								result = stat.executeQuery(
-										String.format("%s%s and %s and %s", selectTitle, qNotCom, qMultiple, qEasy));
-								showResultSet(result);
-							} else {
-								JOptionPane.showMessageDialog(null, "請選擇難易度！", "Error", JOptionPane.ERROR_MESSAGE);
-							}
-						} else if (type_Multiple.isSelected() && type_Combination.isSelected()) {
-
-						} else if (type_Single.isSelected() && type_Multiple.isSelected()
-								&& type_Combination.isSelected()) {
-
+					String query = "";
+					String warn = "";
+					String[] select = { String.valueOf(year_109.isSelected()), String.valueOf(year_108.isSelected()),
+							String.valueOf(type_Single.isSelected()), String.valueOf(type_Multiple.isSelected()),
+							String.valueOf(type_Combination.isSelected()), String.valueOf(degree_Hard.isSelected()),
+							String.valueOf(degree_Medium.isSelected()), String.valueOf(degree_Easy.isSelected()) };
+					if (select[0].equals("true") && select[1].equals("true")) {
+						query = String.format("%s(%s OR %s)", selectTitle, nine, eight);
+					} else {
+						if (select[0].equals("true")) {
+							query = String.format("%s%s", selectTitle, nine);
+						} else if (select[1].equals("true")) {
+							query = String.format("%s%s", selectTitle, eight);
+						} else {
+							warn += "請選擇年度";
 						}
+					}
 
-						CardLayout card = (CardLayout) (panel1.getLayout());
-						card.show(panel1, "instructionPanel");
-					} catch (SQLException ex) {
-						System.out.println(ex.getMessage());
+					if (select[2].equals("true") && select[3].equals("true") && select[4].equals("true")) {
+						query += String.format(" AND (%s OR %s OR %s)", qSingle, qMultiple, qCom);
+					} else if (select[2].equals("true") && select[3].equals("true")) {
+						query += String.format(" AND (%s OR %s)", qSingle, qMultiple);
+					} else if (select[3].equals("true") && select[4].equals("true")) {
+						query += String.format(" AND (%s OR %s)", qMultiple, qCom);
+					} else if (select[2].equals("true") && select[4].equals("true")) {
+						query += String.format(" AND (%s OR %s)", qSingle, qCom);
+					} else {
+						if (select[2].equals("true")) {
+							query += String.format(" AND %s", qSingle);
+						} else if (select[3].equals("true")) {
+							query += String.format(" AND %s", qMultiple);
+						} else if (select[4].equals("true")) {
+							query += String.format(" AND %s", qCom);
+						} else {
+							warn += "、題型";
+						}
+					}
+
+					if (select[5].equals("true") && select[6].equals("true") && select[7].equals("true")) {
+						query += String.format(" AND (%s OR %s OR %s)", qHard, qMedium, qEasy);
+					} else if (select[5].equals("true") && select[6].equals("true")) {
+						query += String.format(" AND (%s OR %s)", qHard, qMedium);
+					} else if (select[6].equals("true") && select[7].equals("true")) {
+						query += String.format(" AND (%s OR %s)", qMedium, qEasy);
+					} else if (select[5].equals("true") && select[7].equals("true")) {
+						query += String.format(" AND (%s OR %s)", qHard, qEasy);
+					} else {
+						if (select[5].equals("true")) {
+							query += String.format(" AND %s", qHard);
+						} else if (select[6].equals("true")) {
+							query += String.format(" AND %s", qMedium);
+						} else if (select[7].equals("true")) {
+							query += String.format(" AND %s", qEasy);
+						} else {
+							warn += "、難易度";
+						}
+					}
+					
+					if (warn == "") {
+						if (subject_Civ.isSelected()) {
+							try {
+								result = stat.executeQuery(query);
+								showResultSet(result);
+							} catch (SQLException ex) {
+								System.out.println(ex.getMessage());
+							}
+						}
+					} else {
+						if (subject_Civ.isSelected()) {
+							warn += "!";
+							JOptionPane.showMessageDialog(null, warn, "Error", JOptionPane.ERROR_MESSAGE);
+						} else {
+							warn += "、科目!";
+							JOptionPane.showMessageDialog(null, warn, "Error", JOptionPane.ERROR_MESSAGE);
+						}
 					}
 				}
-
+				
 				public int getCount() {
 					int questionCount = Integer.parseInt(count.getSelectedItem().toString());
 					return questionCount;
 				}
 
-				public String getTableName() {
-					return tableName;
-				}
-
 				public void showResultSet(ResultSet result) {
-
+					boolean success = false;
 					try {
-
+						Statement stat = conn.createStatement();
 						int columnCount = result.getMetaData().getColumnCount();
 						result.last();
 						int rowCount = result.getRow();
 						result.beforeFirst();
-
+						
 						if (!result.next()) {
 							JOptionPane.showMessageDialog(null, "無符合所選範圍之題目，請重新選擇！", "Error",
 									JOptionPane.ERROR_MESSAGE);
@@ -719,13 +599,13 @@ public class RangePanel extends JPanel {
 								questionList.add(question);
 							}
 
-							ArrayList numbers = new ArrayList();
+							ArrayList<Integer> numbers = new ArrayList<Integer>();
 							for (int i = 0; i < rowCount; i++) {
 								numbers.add(i);
 							}
 							Collections.shuffle(numbers);
 
-							ArrayList test = new ArrayList();
+							ArrayList<Integer> test = new ArrayList<Integer>();
 							if (numbers.size() < getCount()) {
 								JOptionPane.showMessageDialog(null, "所選題數大於所選範圍題目之題數，請重新選擇！", "Error",
 										JOptionPane.ERROR_MESSAGE);
@@ -733,56 +613,102 @@ public class RangePanel extends JPanel {
 								for (int i = 0; i < getCount(); i++) {
 									test.add(numbers.get(i));
 								}
+								Collections.sort(test); // 讓題號輸入資料庫時是照順序的
+								success = true;
 							}
-							String TableName = getTableName() + "_" + String.valueOf(getCount()) + "_" + "userName";
 
-							String creaTable = "CREATE TABLE " + "tableTest "
-									+ "(Year int(5),Subject varchar(20),Number int(5),GroupNumber int(5),MCQ varchar(10),Question varchar(1000),A varchar(500),B varchar(500),C varchar(500),D varchar(500),E varchar(500),Answer varchar(500),Degree int(5),AnswerKey varchar(3000),UserAnswer varchar(500),Mark varchar(10),Note varchar(3000));";
+							String creaTable = "CREATE TABLE IF NOT EXISTS UserQuestion "
+									+ "(UserID varchar(50),TestID int(5),Year int(5),Subject varchar(20),Number int(5),GroupNumber int(5),MCQ varchar(10),Question varchar(1000),Picture varchar(50),A varchar(500),B varchar(500),C varchar(500),D varchar(500),E varchar(500),Answer varchar(500),Degree int(5),AnswerKey varchar(3000),UserAnswer varchar(500),Mark varchar(10),Note varchar(3000));";
 							stat.execute(creaTable);
+
+							userID = LoginPanel.getUserID();// 改成loginPanel裡的getUserID(),userID要改成static
+							ResultSet userIntheDBorNot = stat.executeQuery(
+									String.format("SELECT * FROM UserQuestion WHERE UserID = \"%s\";", userID));
+
+							ArrayList<Integer> testNum = new ArrayList<Integer>();
+
+							if (userIntheDBorNot.next()) {
+								while (userIntheDBorNot.next()) {
+									testNum.add(userIntheDBorNot.getInt("TestID"));
+
+									for (int item : testNum) {
+										if (item > testIDNow) {
+											testIDNow = item;
+										}
+									}
+								}
+							} else {
+								testIDNow = 0;
+								System.out.print(getUserID());
+								System.out.print(getTestID());
+							}
 
 							for (int i = 0; i < test.size(); i++) {
 
-								int year = (int) questionList.get((int) test.get(i)).get(0);
-								String subject = (String) questionList.get((int) test.get(i)).get(1);
-								int number = (int) questionList.get((int) test.get(i)).get(2);
-								int groupNumber = (int) questionList.get((int) test.get(i)).get(3);
-								String MCQ = (String) questionList.get((int) test.get(i)).get(4);
-								String question = (String) questionList.get((int) test.get(i)).get(5);
-								String A = (String) questionList.get((int) test.get(i)).get(6);
-								String B = (String) questionList.get((int) test.get(i)).get(7);
-								String C = (String) questionList.get((int) test.get(i)).get(8);
-								String D = (String) questionList.get((int) test.get(i)).get(9);
-								String E = (String) questionList.get((int) test.get(i)).get(10);
-								String answer = (String) questionList.get((int) test.get(i)).get(11);
-								int degree = (int) questionList.get((int) test.get(i)).get(12);
+								int year = (int) questionList.get(test.get(i)).get(0);
+								String subject = (String) questionList.get(test.get(i)).get(1);
+								int number = (int) questionList.get(test.get(i)).get(2);
+								int groupNumber = (int) questionList.get(test.get(i)).get(3);
+								String MCQ = (String) questionList.get(test.get(i)).get(4);
+								String question = (String) questionList.get(test.get(i)).get(5);
+								String pic = (String) questionList.get(test.get(i)).get(6);
+								String A = (String) questionList.get(test.get(i)).get(7);
+								String B = (String) questionList.get(test.get(i)).get(8);
+								String C = (String) questionList.get(test.get(i)).get(9);
+								String D = (String) questionList.get(test.get(i)).get(10);
+								String E = (String) questionList.get(test.get(i)).get(11);
+								String answer = (String) questionList.get(test.get(i)).get(12);
+								int degree = (int) questionList.get(test.get(i)).get(13);
+								String answerKey = (String) questionList.get(test.get(i)).get(14);
 
-								String query = "INSERT INTO " + "tableTest "
-										+ " VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,null,null,null,null);";
+								String query = "INSERT INTO " + "UserQuestion "
+										+ " VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,null,null,null);";
 
 								PreparedStatement createTableStat = conn.prepareStatement(query);
-								createTableStat.setInt(1, year);
-								createTableStat.setString(2, subject);
-								createTableStat.setInt(3, number);
-								createTableStat.setInt(4, groupNumber);
-								createTableStat.setString(5, MCQ);
-								createTableStat.setString(6, question);
-								createTableStat.setString(7, A);
-								createTableStat.setString(8, B);
-								createTableStat.setString(9, C);
-								createTableStat.setString(10, D);
-								createTableStat.setString(11, E);
-								createTableStat.setString(12, answer);
-								createTableStat.setInt(13, degree);
+
+								createTableStat.setString(1, userID);
+								createTableStat.setInt(2, getTestID());
+								createTableStat.setInt(3, year);
+								createTableStat.setString(4, subject);
+								createTableStat.setInt(5, number);
+								createTableStat.setInt(6, groupNumber);
+								createTableStat.setString(7, MCQ);
+								createTableStat.setString(8, question);
+								createTableStat.setString(9, pic);
+								createTableStat.setString(10, A);
+								createTableStat.setString(11, B);
+								createTableStat.setString(12, C);
+								createTableStat.setString(13, D);
+								createTableStat.setString(14, E);
+								createTableStat.setString(15, answer);
+								createTableStat.setInt(16, degree);
+								createTableStat.setString(17, answerKey);
 
 								createTableStat.executeUpdate();
 							}
 						}
+						if (success == true) {
+							CardLayout card = (CardLayout) (panel1.getLayout());
+							card.show(panel1, "instructionPanel");
+							instruction.updateLabel(question);
+						}
 
 					} catch (SQLException ex) {
 						System.out.println(ex.getMessage());
+					} finally {
+						year_109.setSelected(false);
+						year_108.setSelected(false);
+						type_Single.setSelected(false);
+						type_Multiple.setSelected(false);
+						type_Combination.setSelected(false);
+						degree_Hard.setSelected(false);
+						degree_Medium.setSelected(false);
+						degree_Easy.setSelected(false);
+						modeGroup.clearSelection();
+						testGroup.clearSelection();
+						subjectGroup.clearSelection();
 					}
 				}
-
 			}
 
 			ActionListener btn = new ClickListener();
@@ -796,13 +722,32 @@ public class RangePanel extends JPanel {
 	public void addBackListener(JPanel panel) {
 		class ClickListener implements ActionListener {
 			public void actionPerformed(ActionEvent e) {
+				year_109.setSelected(false);
+				year_108.setSelected(false);
+				type_Single.setSelected(false);
+				type_Multiple.setSelected(false);
+				type_Combination.setSelected(false);
+				degree_Hard.setSelected(false);
+				degree_Medium.setSelected(false);
+				degree_Easy.setSelected(false);
+				modeGroup.clearSelection();
+				testGroup.clearSelection();
+				subjectGroup.clearSelection();
+				
 				CardLayout card = (CardLayout) (panel.getLayout());
 				card.show(panel, "homePanel");
-
 			}
 		}
 		ClickListener listener = new ClickListener();
 		backButton.addActionListener(listener);
+	}
+
+	public static int getTestID() {
+		return testIDNow + 1;
+	}
+
+	public String getUserID() {
+		return userID;
 	}
 
 	public void creaTotalPanel() {

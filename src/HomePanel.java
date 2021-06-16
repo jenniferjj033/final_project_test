@@ -22,7 +22,7 @@ public class HomePanel extends JPanel {
 	private JButton userButton;
 	private JButton testButton;
 	private JButton noteButton;
-	private JButton analysisButton;
+	private JButton listButton;
 	private JPanel operatePanel;
 
 	public HomePanel() {
@@ -65,15 +65,15 @@ public class HomePanel extends JPanel {
 		noteButton.setHorizontalTextPosition(SwingConstants.CENTER);
 		noteButton.setContentAreaFilled(false);
 
-		ImageIcon analysisIcon = new ImageIcon(
-				new ImageIcon("images/analysis.png").getImage().getScaledInstance(80, 80, Image.SCALE_DEFAULT));
-		analysisButton = new JButton("Analysis", analysisIcon);
-		analysisButton.setFont(new Font("Times New Roman", Font.BOLD, 20));
-		analysisButton.setPreferredSize(new Dimension(120, 120));
-		analysisButton.setBorder(BorderFactory.createMatteBorder(7, 1, 1, 1, Color.decode("#E88D67")));
-		analysisButton.setVerticalTextPosition(SwingConstants.TOP);
-		analysisButton.setHorizontalTextPosition(SwingConstants.CENTER);
-		analysisButton.setContentAreaFilled(false);
+		ImageIcon listIcon = new ImageIcon(
+				new ImageIcon("images/list.png").getImage().getScaledInstance(80, 80, Image.SCALE_DEFAULT));
+		listButton = new JButton("List", listIcon);
+		listButton.setFont(new Font("Times New Roman", Font.BOLD, 20));
+		listButton.setPreferredSize(new Dimension(120, 120));
+		listButton.setBorder(BorderFactory.createMatteBorder(7, 1, 1, 1, Color.decode("#E88D67")));
+		listButton.setVerticalTextPosition(SwingConstants.TOP);
+		listButton.setHorizontalTextPosition(SwingConstants.CENTER);
+		listButton.setContentAreaFilled(false);
 
 		operatePanel = new JPanel(new GridBagLayout());
 		operatePanel.setBackground(Color.decode("#F8EFD4"));
@@ -97,7 +97,7 @@ public class HomePanel extends JPanel {
 		gbc1.weightx = 1.0;
 		gbc1.weighty = 1.0;
 		gbc1.insets = new Insets(50, 30, 0, 30);
-		operatePanel.add(analysisButton, gbc1);
+		operatePanel.add(listButton, gbc1);
 
 		setBackground(Color.decode("#F8EFD4"));
 		setLayout(new GridBagLayout());
@@ -129,8 +129,8 @@ public class HomePanel extends JPanel {
 		add(operatePanel, gbc2);
 	}
 	
-	public void addUserListener(JPanel panel) {
-		class ClickListener implements ActionListener {
+	public void addButtonListener(JPanel panel, ListPanel list) {
+		class UserListener implements ActionListener {
 			CardLayout cardLayout = (CardLayout) (panel.getLayout());
 			public void actionPerformed(ActionEvent e) {
 				int input = JOptionPane.showConfirmDialog(null, "Are you sure to log out?", "Confirm Message", JOptionPane.OK_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE);
@@ -139,40 +139,36 @@ public class HomePanel extends JPanel {
 				}
 			}
 		}
-		ClickListener listener = new ClickListener();
-		userButton.addActionListener(listener);
-	}
-	
-	public void addTestListener(JPanel panel) {
-		class ClickListener implements ActionListener {
+		UserListener userListener = new UserListener();
+		userButton.addActionListener(userListener);
+		
+		class TestListener implements ActionListener {
 			CardLayout cardLayout = (CardLayout) (panel.getLayout());
 			public void actionPerformed(ActionEvent e) {
-				cardLayout.show(panel, "rangePanel"); //?
+				cardLayout.show(panel, "rangePanel");
 			}
 		}
-		ClickListener listener = new ClickListener();
-		testButton.addActionListener(listener);
-	}
-	
-	public void addNoteListener(JPanel panel) {
-		class ClickListener implements ActionListener {
+		TestListener testListener = new TestListener();
+		testButton.addActionListener(testListener);
+		
+		class NoteListener implements ActionListener {
 			CardLayout cardLayout = (CardLayout) (panel.getLayout());
 			public void actionPerformed(ActionEvent e) {
-				cardLayout.show(panel, "subjectPanel"); //?
+				cardLayout.show(panel, "subjectPanel");
 			}
 		}
-		ClickListener listener = new ClickListener();
-		noteButton.addActionListener(listener);
-	}
-	
-	public void addAnalysisListener(JPanel panel) {
-		class ClickListener implements ActionListener {
+		NoteListener noteListener = new NoteListener();
+		noteButton.addActionListener(noteListener);
+		
+		class ListListener implements ActionListener {
 			CardLayout cardLayout = (CardLayout) (panel.getLayout());
 			public void actionPerformed(ActionEvent e) {
-				cardLayout.show(panel, ""); //?
+				list.repaintPanel();
+				Viewer.addListListener();
+				cardLayout.show(panel, "listPanel");
 			}
 		}
-		ClickListener listener = new ClickListener();
-		analysisButton.addActionListener(listener);
+		ListListener listListener = new ListListener();
+		listButton.addActionListener(listListener);
 	}
 }

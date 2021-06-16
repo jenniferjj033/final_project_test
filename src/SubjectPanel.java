@@ -7,7 +7,7 @@ import java.awt.event.*;
 import java.awt.*;
 
 public class SubjectPanel extends JPanel {
-	private JPanel subjectPanel;
+	private JPanel subjectPanel, down_toolPanel;
 	private JLabel titleLabel;
 	private JButton homeButton, backButton;
 	private JButton subjectButtonChi, subjectButtonEn, subjectButtonMa, subjectButtonSo, subjectButtonSc,
@@ -18,15 +18,15 @@ public class SubjectPanel extends JPanel {
 		createTitleLabel();
 		createSubjectBtn();
 		createBackButton();
-		addSBtnListener();
-		createBtnPanel();
+		createToolPanel();
+		setBtnPanel();
 		setLayout();
 	}
 	
 	public QTool getQTool() {
 		return this.qTool;
 	}
-
+	
 	public void createTitleLabel() {
 		ImageIcon noteIcon = new ImageIcon(
 				new ImageIcon("images/note.png").getImage().getScaledInstance(60, 60, Image.SCALE_DEFAULT));
@@ -38,6 +38,9 @@ public class SubjectPanel extends JPanel {
 	}
 
 	public void createSubjectBtn() {
+		subjectPanel = new JPanel(new GridBagLayout());
+		subjectPanel.setBackground(Color.decode("#F8EFD4"));
+		
 		subjectButtonChi = new RoundButton("國文", 3, 3);
 		subjectButtonEn = new RoundButton("英文", 3, 3);
 		subjectButtonMa = new RoundButton("數學", 3, 3);
@@ -56,6 +59,26 @@ public class SubjectPanel extends JPanel {
 			subjectBtns[i].setFont(new Font("微軟正黑體", Font.PLAIN, 40));
 			subjectBtns[i].setPreferredSize(new Dimension(120, 120));
 		}
+		
+		class SocietyBtnListener implements ActionListener {
+			public void actionPerformed(ActionEvent e) {
+				backButton.setVisible(true);
+				setSocietyPanel();
+				repaintPanel();
+			}
+		}
+		SocietyBtnListener listenerSo = new SocietyBtnListener();
+		subjectButtonSo.addActionListener(listenerSo);
+
+		class ScienceBtnListener implements ActionListener {
+			public void actionPerformed(ActionEvent e) {
+				backButton.setVisible(true);
+				setSciencePanel();
+				repaintPanel();
+			}
+		}
+		ScienceBtnListener listenerSc = new ScienceBtnListener();
+		subjectButtonSc.addActionListener(listenerSc);
 	}
 
 	public void createBackButton() {
@@ -70,20 +93,24 @@ public class SubjectPanel extends JPanel {
 		class ClickListener implements ActionListener {
 			public void actionPerformed(ActionEvent e) {
 				backButton.setVisible(false);
-				removeAll();
-				createBtnPanel();
-				setLayout();
-				validate();
-				repaint();
+				setBtnPanel();
+				repaintPanel();
 			}
 		}
 		ClickListener listener = new ClickListener();
 		backButton.addActionListener(listener);
 	}
-
-	public void createBtnPanel() {
-		subjectPanel = new JPanel(new GridBagLayout());
-		subjectPanel.setBackground(Color.decode("#F8EFD4"));
+	
+	public void repaintPanel() {
+		removeAll();
+		setLayout();
+		validate();
+		repaint();
+	}
+	
+	public void setBtnPanel() {
+		subjectPanel.removeAll();
+		backButton.setVisible(false);
 		
 		GridBagConstraints gbc = new GridBagConstraints();
 		gbc.gridx = 0;
@@ -123,44 +150,15 @@ public class SubjectPanel extends JPanel {
 		subjectPanel.add(subjectButtonSc, gbc);
 	}
 
-	public void addSBtnListener() {
-		class SocietyBtnListener implements ActionListener {
-			public void actionPerformed(ActionEvent e) {
-				backButton.setVisible(true);
-				removeAll();
-				createSocietyPanel();
-				setLayout();
-				validate();
-				repaint();
-			}
-		}
-		SocietyBtnListener listenerSo = new SocietyBtnListener();
-		subjectButtonSo.addActionListener(listenerSo);
-
-		class ScienceBtnListener implements ActionListener {
-			public void actionPerformed(ActionEvent e) {
-				backButton.setVisible(true);
-				removeAll();
-				createSciencePanel();
-				setLayout();
-				validate();
-				repaint();
-			}
-		}
-		ScienceBtnListener listenerSc = new ScienceBtnListener();
-		subjectButtonSc.addActionListener(listenerSc);
-	}
-
-	public void createSocietyPanel() {
-		subjectPanel = new JPanel(new GridBagLayout());
-		subjectPanel.setBackground(Color.decode("#F8EFD4"));
+	public void setSocietyPanel() {	
+		subjectPanel.removeAll();
 		
 		GridBagConstraints gbc = new GridBagConstraints();
 		gbc.gridx = 1;
 		gbc.gridy = 0;
 		gbc.weightx = 1.0;
 		gbc.weighty = 1.0;
-		gbc.insets = new Insets(0, 30, 30, 30);
+		gbc.insets = new Insets(0, 20, 20, 20);
 		gbc.anchor = GridBagConstraints.CENTER;
 		subjectPanel.add(subjectButtonGe, gbc);
 
@@ -181,9 +179,8 @@ public class SubjectPanel extends JPanel {
 		subjectPanel.add(subjectButtonCi, gbc);
 	}
 
-	public void createSciencePanel() {
-		subjectPanel = new JPanel(new GridBagLayout());
-		subjectPanel.setBackground(Color.decode("#F8EFD4"));
+	public void setSciencePanel() {
+		subjectPanel.removeAll();
 		
 		GridBagConstraints gbc = new GridBagConstraints();
 		gbc.gridx = 0;
@@ -206,16 +203,16 @@ public class SubjectPanel extends JPanel {
 		gbc.gridy = 1;
 		gbc.weightx = 1.0;
 		gbc.weighty = 1.0;
-		gbc.insets = new Insets(30, 30, 0, 30);
+		gbc.insets = new Insets(20, 20, 0, 20);
 		gbc.anchor = GridBagConstraints.CENTER;
 		subjectPanel.add(subjectButtonBi, gbc);
 	}
-
-	public void setLayout() {
+	
+	public void createToolPanel() {
 		qTool = new QTool();
-		homeButton = qTool.createHomeButton();
+		homeButton = qTool.getHomeButton();
 
-		JPanel down_toolPanel = new JPanel();
+		down_toolPanel = new JPanel();
 		down_toolPanel.setBackground(Color.decode("#F8EFD4"));
 		down_toolPanel.setLayout(new BoxLayout(down_toolPanel, BoxLayout.X_AXIS));
 		down_toolPanel.add(Box.createRigidArea(new Dimension(50, 0)));
@@ -223,9 +220,10 @@ public class SubjectPanel extends JPanel {
 		down_toolPanel.add(Box.createHorizontalGlue());
 		down_toolPanel.add(homeButton);
 		down_toolPanel.add(Box.createHorizontalGlue());
-		down_toolPanel.add(new JLabel());
 		down_toolPanel.add(Box.createRigidArea(new Dimension(50, 0)));
+	}
 
+	public void setLayout() {
 		setBackground(Color.decode("#F8EFD4"));
 		setLayout(new GridBagLayout());
 		GridBagConstraints gbc = new GridBagConstraints();
@@ -258,12 +256,14 @@ public class SubjectPanel extends JPanel {
 		add(down_toolPanel, gbc);
 	}
 	
-	public void addButtonListener(JPanel panel, AnswerListPanel ansListPanel) {
+	public void addButtonListener(JPanel panel, AnswerListPanel ansListPanel, AnswerKeyPanel ansKeyPanel) {
 		CardLayout card = (CardLayout) (panel.getLayout());
 
 		class ChineseListener implements ActionListener {
 			public void actionPerformed(ActionEvent e) {
+				Viewer.addNoteListener();
 				ansListPanel.updateTitle("Chinese");
+				ansListPanel.repaintPanel();
 				card.show(panel, "noteQPanel");
 			}
 		}
@@ -272,7 +272,9 @@ public class SubjectPanel extends JPanel {
 		
 		class EnglishListener implements ActionListener {
 			public void actionPerformed(ActionEvent e) {
+				Viewer.addNoteListener();
 				ansListPanel.updateTitle("English");
+				ansListPanel.repaintPanel();
 				card.show(panel, "noteQPanel");
 			}
 		}
@@ -281,7 +283,9 @@ public class SubjectPanel extends JPanel {
 		
 		class MathListener implements ActionListener {
 			public void actionPerformed(ActionEvent e) {
+				Viewer.addNoteListener();
 				ansListPanel.updateTitle("Math");
+				ansListPanel.repaintPanel();
 				card.show(panel, "noteQPanel");
 			}
 		}
@@ -290,7 +294,9 @@ public class SubjectPanel extends JPanel {
 		
 		class HistoryListener implements ActionListener {
 			public void actionPerformed(ActionEvent e) {
+				Viewer.addNoteListener();
 				ansListPanel.updateTitle("History");
+				ansListPanel.repaintPanel();
 				card.show(panel, "noteQPanel");
 			}
 		}
@@ -299,7 +305,9 @@ public class SubjectPanel extends JPanel {
 		
 		class GeographyListener implements ActionListener {
 			public void actionPerformed(ActionEvent e) {
+				Viewer.addNoteListener();
 				ansListPanel.updateTitle("Geography");
+				ansListPanel.repaintPanel();
 				card.show(panel, "noteQPanel");
 			}
 		}
@@ -308,7 +316,9 @@ public class SubjectPanel extends JPanel {
 		
 		class CitizenListener implements ActionListener {
 			public void actionPerformed(ActionEvent e) {
-				ansListPanel.updateTitle("Citizen");
+				Viewer.addNoteListener();	
+				ansListPanel.updateTitle("Civics");
+				ansListPanel.repaintPanel();
 				card.show(panel, "noteQPanel");
 			}
 		}
@@ -317,7 +327,9 @@ public class SubjectPanel extends JPanel {
 		
 		class PhysicListener implements ActionListener {
 			public void actionPerformed(ActionEvent e) {
-				ansListPanel.updateTitle("Physic");
+				Viewer.addNoteListener();
+				ansListPanel.updateTitle("Physics");
+				ansListPanel.repaintPanel();
 				card.show(panel, "noteQPanel");
 			}
 		}
@@ -326,7 +338,9 @@ public class SubjectPanel extends JPanel {
 		
 		class ChemistryListener implements ActionListener {
 			public void actionPerformed(ActionEvent e) {
+				Viewer.addNoteListener();
 				ansListPanel.updateTitle("Chemistry");
+				ansListPanel.repaintPanel();
 				card.show(panel, "noteQPanel");
 			}
 		}
@@ -335,7 +349,10 @@ public class SubjectPanel extends JPanel {
 		
 		class BiologyListener implements ActionListener {
 			public void actionPerformed(ActionEvent e) {
+				Viewer.addNoteListener();
 				ansListPanel.updateTitle("Biology");
+				ansListPanel.repaintPanel();
+				card.show(panel, "noteQPanel");
 			}
 		}
 		ActionListener listenerBi = new BiologyListener();

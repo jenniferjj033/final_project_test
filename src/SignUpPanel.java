@@ -25,12 +25,12 @@ public class SignUpPanel extends JPanel {
 		try {
 			String server = "jdbc:mysql://140.119.19.73:9306/";
 			String database = "MG05";
-			String url = server + database;
+			String url = server + database + "?useUnicode=true&characterEncoding=UTF-8&autoReconnect=true&failOverReadOnly=false";
 			String username = "MG05";
 			String password = "9mMuzQ";
 			conn = DriverManager.getConnection(url, username, password);
 		} catch (Exception e) {
-			e.getMessage();
+			System.out.println("<SignUpPanel> constructor: " + e.getMessage());
 		}
 		createComp();
 	}

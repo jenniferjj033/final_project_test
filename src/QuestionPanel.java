@@ -9,6 +9,7 @@ import java.awt.GridBagLayout;
 import java.awt.GridLayout;
 import java.awt.Image;
 import java.awt.Insets;
+import java.awt.Point;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.sql.Connection;
@@ -17,76 +18,123 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
+import javax.swing.JEditorPane;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
+import javax.swing.JTextPane;
 import javax.swing.SwingConstants;
 import javax.swing.border.LineBorder;
+import javax.swing.text.BadLocationException;
+import javax.swing.text.SimpleAttributeSet;
+import javax.swing.text.Style;
+import javax.swing.text.StyleConstants;
+import javax.swing.text.StyleContext;
+import javax.swing.text.StyledDocument;
 
 import style.*;
 
 public class QuestionPanel extends JPanel {
-	private JPanel up_toolPanel, down_toolPanel;
-	private JPanel questionPanel, answerPanel;
-	private JButton moreButton, playButton, pauseButton;
+	private JPanel up_toolPanel, down_toolPanel, questionPanel, answerPanel, pausePanel;
+	private JScrollPane scrollPane;
+	private JButton moreButton, playButton, pauseButton, finishButton, backButton, nextButton, markButton;
 	private JLabel timeLabel;
-	private JButton finishButton, backButton, nextButton;
-	private JTextArea questionArea;
-	private JButton markButton;
+	private JTextPane questionText;
 	private JLabel[] answerLabel;
-	private ArrayList<JButton> answerButtons;
-	private ArrayList<String> chosenAnsNum; // 使用者當題答案
-	private ArrayList<String> ifMarked;
 	private JButton aButton, bButton, cButton, dButton, eButton;
 	private JButton[] xButtons;
-	private int number; // 題號
-	private int option;
+	private boolean[] click;
+	private boolean[][] clickX;
+	private ArrayList<JButton> answerButtons;
+	private ArrayList<String> ifMarked, chosenAnsNum; // 使用者當題答案
+	private ArrayList<Integer> numbers; // 題號們
+	private ArrayList<Integer> years;
+	private int option, number; // number = 題號們的第幾位數字
+	private static String subject;
+	private String year;
 	private Connection conn;
 	private QTool qTool;
 	private Answer answer;
-	private String test;
-	
-	private JButton[] numButtons;
-	private JPanel buttonPanel;
-	private int size;
-	
+	private ImageIcon beforeMark, afterMark, beforeX, afterX;
 
-	public QuestionPanel(String test) {
+	private RoundButton[] numButtons;
+	private JPanel buttonPanel;
+
+	public QuestionPanel() {
 		try {
 			String server = "jdbc:mysql://140.119.19.73:9306/";
 			String database = "MG05";
-			String url = server + database;
+			String url = server + database
+					+ "?useUnicode=true&characterEncoding=UTF-8&autoReconnect=true&failOverReadOnly=false";
 			String username = "MG05";
 			String password = "9mMuzQ";
 			conn = DriverManager.getConnection(url, username, password);
 		} catch (Exception e) {
-			System.out.println(e.getMessage());
+			System.out.println("<QuestionPanel> constructor: " + e.getMessage());
 		}
+	}
 
-		this.test = test;
+	public void initialize() {
 		chosenAnsNum = new ArrayList<String>();
+		years = new ArrayList<Integer>();
 		qTool = new QTool();
 		answer = new Answer();
-		answer.setNumbers(test);
 		ifMarked = answer.getIfMarked();
-		number = 1;
-		
+		numbers = answer.getNumbers();
+		number = 0;
+		System.out.println(numbers);
+
+		pausePanel = new JPanel(new BorderLayout());
+		pausePanel.setBackground(Color.decode("#F8EFD4"));
+		ImageIcon pauseIcon = new ImageIcon(
+				new ImageIcon("images/rest.png").getImage().getScaledInstance(500, 500, Image.SCALE_DEFAULT));
+		JLabel pauseLabel = new JLabel(pauseIcon);
+		pausePanel.add(pauseLabel, BorderLayout.CENTER);
+
+		try {
+			Statement stat = conn.createStatement();
+			String query = "SELECT Subject, Year FROM UserQuestion WHERE UserID = '" + LoginPanel.getUserID()
+					+ "' AND TestID = '" + RangePanel.getTestID() + "'";
+			ResultSet result = stat.executeQuery(query);
+			if (result.next()) {
+				subject = result.getString(1);
+				year = String.valueOf(result.getInt(2));
+			}
+			while (result.next()) {
+				if (!String.valueOf(result.getInt(2)).equals(year)) {
+					year += ", " + String.valueOf(result.getInt(2));
+					break;
+				}
+			}
+			result.beforeFirst();
+			
+			while (result.next()) {
+				years.add(result.getInt(2));
+			}
+			result.close();
+		} catch (Exception e) {
+			System.out.println("<Question Panel> getSubject: " + e.getMessage());
+		}
+
 		createBackButton();
 		createNextButton();
 		createMarkButton();
-		createQuestionArea();
-		createAnswerComp();
-		createQToolPanel();
-		setQuestionLayout();
-		
-		createButtons();
+		createQuestionComp();
+		createXButton();
+		createAnswerButton();
+		createAnswerPanel();
+		createToolPanel();
+		createQNumButtons();
+
+		repaintQuestionPanel();
 	}
 
 	public QTool getQTool() {
@@ -101,8 +149,35 @@ public class QuestionPanel extends JPanel {
 		return this.timeLabel;
 	}
 
-	public String getTest() {
-		return this.test;
+	public JPanel getAnswerPanel() {
+		return this.answerPanel;
+	}
+
+	public JButton[] getNumButtons() {
+		return this.numButtons;
+	}
+
+	public boolean[][] getClickX() {
+		return this.clickX;
+	}
+
+	public static String getSubject() {
+		return subject;
+	}
+
+	public String getYear() {
+		return this.year;
+	}
+
+	public JButton putMoreButton() {
+		qTool.setClickMore(0);
+		return this.moreButton;
+	}
+
+	public JLabel putTimeLabel() {
+		qTool.setTimerun(true);
+		qTool.setTimeLabelText(null);
+		return this.timeLabel;
 	}
 
 	public void updateNumber(int num) {
@@ -131,42 +206,31 @@ public class QuestionPanel extends JPanel {
 			}
 		}
 
-		if (a != "" && a != answer.getUserAnswers().get(number - 1)) {
-			answer.setUserAnswers(number - 1, a);
+		if (a != "" && a != answer.getUserAnswers().get(number)) {
+			answer.setUserAnswers(number, a);
+		} else if (a == "") {
+			answer.setUserAnswers(number, null);
 		}
 		chosenAnsNum.clear();
 	}
 
 	public void repaintQuestionPanel() {
-		int last = 0;
-		int first = 0;
-		try {
-			Statement stat = conn.createStatement();
-			String query = "SELECT Number FROM " + test + " WHERE Number <> 0";
-			ResultSet result = stat.executeQuery(query);
-			result.next();
-			first = result.getInt(1);
-			result.last();
-			last = result.getInt(1);
-			result.close();
-		} catch (Exception e) {
-			System.out.printf("repaint panel %s\n", e.getMessage());
-		}
-
-		if (number == first) {
+		if (number == 0) {
 			backButton.setVisible(false);
 			nextButton.setVisible(true);
-		} else if (number == last) {
+		} else if (number == (numbers.size() - 1)) {
 			backButton.setVisible(true);
 			nextButton.setVisible(false);
 		} else {
 			backButton.setVisible(true);
 			nextButton.setVisible(true);
 		}
+		questionText.setText("");
 		removeAll();
-		createMarkButton();
-		createQuestionArea();
-		createAnswerComp();
+		updateMarkButton();
+		updateQuestionText();
+		updateXButton();
+		updateAnswerComp();
 		setQuestionLayout();
 		validate();
 		repaint();
@@ -213,34 +277,29 @@ public class QuestionPanel extends JPanel {
 	}
 
 	public void createMarkButton() {
-		ImageIcon beforeMark = new ImageIcon(
+		beforeMark = new ImageIcon(
 				new ImageIcon("images/beforeMark.png").getImage().getScaledInstance(30, 30, Image.SCALE_DEFAULT));
+		afterMark = new ImageIcon(
+				new ImageIcon("images/afterMark.png").getImage().getScaledInstance(30, 30, Image.SCALE_DEFAULT));
 		ImageIcon qMark = new ImageIcon(
 				new ImageIcon("images/afterMark.png").getImage().getScaledInstance(25, 25, Image.SCALE_DEFAULT));
-		ImageIcon afterMark = new ImageIcon(
-				new ImageIcon("images/afterMark.png").getImage().getScaledInstance(30, 30, Image.SCALE_DEFAULT));
 		markButton = new JButton(); // "?"
 		markButton.setBorder(null);
 		markButton.setOpaque(false);
 		markButton.setContentAreaFilled(false);
-		if (ifMarked.get(number - 1) == "FALSE") {
-			markButton.setIcon(beforeMark);
-		} else {
-			markButton.setIcon(afterMark);
-		}
-
+		markButton.setIcon(beforeMark);
 		class ClickListener implements ActionListener {
 			public void actionPerformed(ActionEvent e) {
-				if (ifMarked.get(number - 1) == "FALSE") {
+				if (ifMarked.get(number) == "FALSE") {
 					markButton.setIcon(afterMark);
-					numButtons[number - 1].setText("");
-					numButtons[number - 1].setIcon(qMark);
-					ifMarked.set(number - 1, "TRUE");
+					numButtons[number].setText("");
+					numButtons[number].setIcon(qMark);
+					ifMarked.set(number, "TRUE");
 				} else {
 					markButton.setIcon(beforeMark);
-					numButtons[number - 1].setText(String.format("%s", number));
-					numButtons[number - 1].setIcon(null);
-					ifMarked.set(number - 1, "FALSE");
+					numButtons[number].setText(String.format("%d", numbers.get(number)));
+					numButtons[number].setIcon(null);
+					ifMarked.set(number, "FALSE");
 				}
 			}
 		}
@@ -248,15 +307,24 @@ public class QuestionPanel extends JPanel {
 		markButton.addActionListener(listener);
 	}
 
-	public void createQuestionArea() {
-		questionArea = new JTextArea();
-		questionArea.setLineWrap(true);
-		questionArea.setEditable(false);
+	public void updateMarkButton() {
+		if (ifMarked.get(number) == "FALSE") {
+			markButton.setIcon(beforeMark);
+		} else {
+			markButton.setIcon(afterMark);
+		}
 
-		JScrollPane scrollPane = new JScrollPane(questionArea);
+	}
+
+	public void createQuestionComp() {
+		questionText = new JTextPane();
+		questionText.setBackground(Color.decode("#F8EFD4"));
+		questionText.setEditable(false);
+
+		scrollPane = new JScrollPane(questionText);
 		scrollPane.getViewport().getView().setBackground(Color.decode("#F8EFD4"));
 		scrollPane.setBorder(new LineBorder(Color.decode("#524632")));
-		scrollPane.setPreferredSize(new Dimension(200, 120));
+		scrollPane.setPreferredSize(new Dimension(200, 150));
 		scrollPane.setAlignmentX(Component.CENTER_ALIGNMENT);
 		markButton.setAlignmentY(Component.TOP_ALIGNMENT);
 		questionPanel = new JPanel();
@@ -267,41 +335,78 @@ public class QuestionPanel extends JPanel {
 		questionPanel.add(Box.createRigidArea(new Dimension(5, 0)));
 		questionPanel.add(markButton);
 		questionPanel.add(Box.createRigidArea(new Dimension(10, 0)));
+	}
 
+	public void updateQuestionText() {
+		String pic = "";
+		String que = "";
 		try {
 			Statement stat = conn.createStatement();
-			String Question = "SELECT Question FROM " + test + " WHERE Number = " + number;
+
+			String Question = "SELECT Question, Picture FROM UserQuestion WHERE UserID = '" + LoginPanel.getUserID()
+					+ "' AND TestID = '" + RangePanel.getTestID() + "' AND Number = " + numbers.get(number)
+					+ " AND Year = " + years.get(number);
 			stat.execute(Question);
 			ResultSet result = stat.getResultSet();
 			result.next();
 
-			questionArea.setText(String.format("Q%d. %s", number, result.getString(1)));
-			questionArea.setFont(new Font("微軟正黑體", Font.PLAIN, 16));
+			que = String.format("%d - Q%d. %s", years.get(number), numbers.get(number), result.getString(1));
+			pic = result.getString(2);
 		} catch (Exception e) {
-			System.out.printf("create question area %s\n", e.getMessage());
+			System.out.printf("<QuestionPanel> create textPane: %s\n", e.getMessage());
+		}
+
+		String[] initString = { que, "\n", " " };
+		String[] initStyles = { "regular", "regular", "icon", };
+
+		StyledDocument doc = questionText.getStyledDocument();
+		Style def = StyleContext.getDefaultStyleContext().getStyle(StyleContext.DEFAULT_STYLE);
+		Style regular = doc.addStyle("regular", def);
+		StyleConstants.setFontFamily(def, "微軟正黑體");
+		StyleConstants.setFontSize(def, 16);
+		Style s = doc.addStyle("icon", regular);
+		StyleConstants.setAlignment(s, StyleConstants.ALIGN_RIGHT);
+		if (pic != null) {
+			ImageIcon icon = new ImageIcon("qpic/" + pic);
+			icon = new ImageIcon(icon.getImage().getScaledInstance((icon.getIconWidth() / 5 * 2),
+					(icon.getIconHeight() / 5 * 2), Image.SCALE_DEFAULT));
+			StyleConstants.setIcon(s, icon);
+		}
+		try {
+			for (int i = 0; i < initString.length; i++) {
+				doc.insertString(doc.getLength(), initString[i], doc.getStyle(initStyles[i]));
+			}
+		} catch (BadLocationException e) {
+			System.err.printf("<QuestionPanel> create textPane: %s\n", e.getMessage());
 		}
 	}
 
 	public void createXButton() {
-		ImageIcon beforeX = new ImageIcon(
+		beforeX = new ImageIcon(
 				new ImageIcon("images/beforeX.png").getImage().getScaledInstance(20, 20, Image.SCALE_DEFAULT));
-		ImageIcon afterX = new ImageIcon(
+		afterX = new ImageIcon(
 				new ImageIcon("images/afterX.png").getImage().getScaledInstance(20, 20, Image.SCALE_DEFAULT));
-		xButtons = new JButton[option];
+		xButtons = new JButton[5];
+		clickX = new boolean[numbers.size()][5];
+		for (int i = 0; i < numbers.size(); i++) {
+			for (int j = 0; j < 5; j++) {
+				clickX[i][j] = false;
+			}
+		}
+
 		class X_ClickListener implements ActionListener {
-			boolean[] click = { false, false, false, false, false };
 
 			public void actionPerformed(ActionEvent e) {
 				for (int i = 0; i < xButtons.length; i++) {
 					if (xButtons[i].getModel().isArmed()) {
-						if (click[i] == false) {
+						if (clickX[number][i] == false) {
 							xButtons[i].setIcon(afterX);
 							answerButtons.get(i).setBorder(new BubbleBorder(Color.decode("#F8EFD4"), 1, 15, 0));
 							chosenAnsNum.remove(String.valueOf(i));
-							click[i] = true;
+							clickX[number][i] = true;
 						} else {
 							xButtons[i].setIcon(beforeX);
-							click[i] = false;
+							clickX[numbers.size()][i] = false;
 						}
 					}
 				}
@@ -309,7 +414,7 @@ public class QuestionPanel extends JPanel {
 			}
 		}
 		X_ClickListener xListener = new X_ClickListener();
-		for (int i = 0; i < option; i++) {
+		for (int i = 0; i < 5; i++) {
 			xButtons[i] = new JButton(); // "X"
 			xButtons[i].setBorder(null);
 			xButtons[i].setContentAreaFilled(false);
@@ -318,65 +423,161 @@ public class QuestionPanel extends JPanel {
 		}
 	}
 
-	public void createAnswerButton() {
-		ImageIcon beforeX = new ImageIcon(
-				new ImageIcon("images/beforeX.png").getImage().getScaledInstance(20, 20, Image.SCALE_DEFAULT));
-		ImageIcon afterX = new ImageIcon(
-				new ImageIcon("images/afterX.png").getImage().getScaledInstance(20, 20, Image.SCALE_DEFAULT));
-		option = 4;
+	public void updateXButton() {
+		for (int i = 0; i < option; i++) {
+			if (clickX[number][i] == false) {
+				xButtons[i].setIcon(beforeX);
+			} else {
+				xButtons[i].setIcon(afterX);
+			}
+		}
+	}
 
+	public void createAnswerButton() {
+		option = 4;
+		click = new boolean[5];
+
+		aButton = new JButton();
+		bButton = new JButton();
+		cButton = new JButton();
+		dButton = new JButton();
+		eButton = new JButton();
+
+		answerButtons = new ArrayList<JButton>();
+		answerButtons.add(aButton);
+		answerButtons.add(bButton);
+		answerButtons.add(cButton);
+		answerButtons.add(dButton);
+		answerButtons.add(eButton);
+
+		class Ans_ClickListener implements ActionListener {
+			public void actionPerformed(ActionEvent e) {
+				for (int i = 0; i < option; i++) {
+					if (option == 4) {
+						if (answerButtons.get(i).getModel().isArmed()) {
+							if (click[i] == false) {
+								answerButtons.get(i).setBorder(new BubbleBorder(Color.decode("#5E8CD1"), 1, 15, 0));
+								xButtons[i].setIcon(beforeX);
+								chosenAnsNum.clear();
+								chosenAnsNum.add(String.valueOf(i));
+								click[i] = true;
+							} else {
+								answerButtons.get(i).setBorder(new BubbleBorder(Color.decode("#F8EFD4"), 1, 15, 0));
+								chosenAnsNum.remove(String.valueOf(i));
+								click[i] = false;
+							}
+
+							numButtons[number].setBorderColor(Color.decode("#5E8CD1"), Color.decode("#CFDEF2"));
+						} else {
+							answerButtons.get(i).setBorder(new BubbleBorder(Color.decode("#F8EFD4"), 1, 15, 0));
+						}
+					} else {
+						if (answerButtons.get(i).getModel().isArmed()) {
+							if (click[i] == false) {
+								answerButtons.get(i).setBorder(new BubbleBorder(Color.decode("#5E8CD1"), 1, 15, 0));
+								xButtons[i].setIcon(beforeX);
+								chosenAnsNum.add(String.valueOf(i));
+								Collections.sort(chosenAnsNum);
+								click[i] = true;
+							} else {
+								answerButtons.get(i).setBorder(new BubbleBorder(Color.decode("#F8EFD4"), 1, 15, 0));
+								chosenAnsNum.remove(String.valueOf(i));
+								click[i] = false;
+							}
+
+							numButtons[number].setBorderColor(Color.decode("#5E8CD1"), Color.decode("#CFDEF2"));
+						}
+					}
+				}
+				// System.out.println(chosenAnsNum);
+			}
+		}
+		Ans_ClickListener ansListener = new Ans_ClickListener();
+		for (JButton b : answerButtons) {
+			b.setHorizontalAlignment(SwingConstants.LEFT);
+			b.setBorder(new BubbleBorder(Color.decode("#F8EFD4"), 1, 15, 0));
+			b.setContentAreaFilled(false);
+			b.setPreferredSize(new Dimension(900, 70));
+
+			b.setFont(new Font("微軟正黑體", Font.PLAIN, 16));
+			b.addActionListener(ansListener);
+		}
+
+		answerLabel = new JLabel[5];
+		for (int i = 0; i < 5; i++) {
+			answerLabel[i] = new JLabel();
+			answerLabel[i].setBorder(null);
+			answerLabel[i].setFont(new Font("微軟正黑體", Font.PLAIN, 16));
+		}
+		answerLabel[0].setText("A.");
+		answerLabel[1].setText("B.");
+		answerLabel[2].setText("C.");
+		answerLabel[3].setText("D.");
+		answerLabel[4].setText("E.");
+	}
+
+	public void updateAnswerComp() {
 		try {
-			answerButtons = new ArrayList<JButton>();
 			Statement stat = conn.createStatement();
 
-			String queryA = "SELECT A FROM " + test + " WHERE Number = " + number;
+			String queryA = "SELECT A FROM UserQuestion WHERE UserID = '" + LoginPanel.getUserID() + "' AND TestID = '"
+					+ RangePanel.getTestID() + "' AND Number = " + numbers.get(number) + " AND Year = "
+					+ years.get(number);
 			ResultSet resultA = stat.executeQuery(queryA);
 			resultA.next();
-			aButton = new JButton(resultA.getString(1));
-			answerButtons.add(aButton);
+			aButton.setText(resultA.getString(1));
+
 			resultA.close();
 
-			String queryB = "SELECT B FROM " + test + " WHERE Number = " + number;
+			String queryB = "SELECT B FROM UserQuestion WHERE UserID = '" + LoginPanel.getUserID() + "' AND TestID = '"
+					+ RangePanel.getTestID() + "' AND Number = " + numbers.get(number) + " AND Year = "
+					+ years.get(number);
 			ResultSet resultB = stat.executeQuery(queryB);
 			resultB.next();
-			bButton = new JButton(resultB.getString(1));
-			answerButtons.add(bButton);
+			bButton.setText(resultB.getString(1));
 			resultB.close();
 
-			String queryC = "SELECT C FROM " + test + " WHERE Number = " + number;
+			String queryC = "SELECT C FROM UserQuestion WHERE UserID = '" + LoginPanel.getUserID() + "' AND TestID = '"
+					+ RangePanel.getTestID() + "' AND Number = " + numbers.get(number) + " AND Year = "
+					+ years.get(number);
 			ResultSet resultC = stat.executeQuery(queryC);
 			resultC.next();
-			cButton = new JButton(resultC.getString(1));
-			answerButtons.add(cButton);
+			cButton.setText(resultC.getString(1));
 			resultC.close();
 
-			String queryD = "SELECT D FROM " + test + " WHERE Number = " + number;
+			String queryD = "SELECT D FROM UserQuestion WHERE UserID = '" + LoginPanel.getUserID() + "' AND TestID = '"
+					+ RangePanel.getTestID() + "' AND Number = " + numbers.get(number) + " AND Year = "
+					+ years.get(number);
 			ResultSet resultD = stat.executeQuery(queryD);
 			resultD.next();
-			dButton = new JButton(resultD.getString(1));
-			answerButtons.add(dButton);
+			dButton.setText(resultD.getString(1));
 			resultD.close();
 
-			String queryE = "SELECT E FROM " + test + " WHERE Number = " + number;
+			String queryE = "SELECT E FROM UserQuestion WHERE UserID = '" + LoginPanel.getUserID() + "' AND TestID = '"
+					+ RangePanel.getTestID() + "' AND Number = " + numbers.get(number) + " AND Year = "
+					+ years.get(number);
 			ResultSet resultE = stat.executeQuery(queryE);
 			resultE.next();
 			if (resultE.getString(1) != null) {
 				option = 5;
-				eButton = new JButton(resultE.getString(1));
-				answerButtons.add(eButton);
+				eButton.setText(resultE.getString(1));
+				eButton.setVisible(true);
+				answerLabel[4].setVisible(true);
+				xButtons[4].setVisible(true);
+			} else {
+				option = 4;
+				eButton.setText("");
+				eButton.setVisible(false);
+				answerLabel[4].setVisible(false);
+				xButtons[4].setVisible(false);
 			}
 			resultE.close();
 
-			for (JButton b : answerButtons) {
-				b.setHorizontalAlignment(SwingConstants.LEFT);
-				b.setBorder(new BubbleBorder(Color.decode("#F8EFD4"), 1, 15, 0));
-				b.setContentAreaFilled(false);
-				b.setPreferredSize(new Dimension(900, 70));
-				b.setFont(new Font("微軟正黑體", Font.PLAIN, 16));
+			for (int i = 0; i < 5; i++) {
+				click[i] = false;
+				answerButtons.get(i).setBorder(new BubbleBorder(Color.decode("#F8EFD4"), 1, 15, 0));
 			}
-
-			boolean[] click = { false, false, false, false, false };
-			String a = answer.getUserAnswers().get(number - 1);
+			String a = answer.getUserAnswers().get(number);
 			if (a != null) {
 				for (int i = 0; i < a.length(); i++) {
 					switch (a.charAt(i)) {
@@ -408,77 +609,16 @@ public class QuestionPanel extends JPanel {
 					}
 				}
 			}
-
-			class Ans_ClickListener implements ActionListener {
-
-				public void actionPerformed(ActionEvent e) {
-					for (int i = 0; i < answerButtons.size(); i++) {
-						if (answerButtons.size() == 4) {
-							if (answerButtons.get(i).getModel().isArmed()) {
-								if (click[i] == false) {
-									answerButtons.get(i).setBorder(new BubbleBorder(Color.decode("#5E8CD1"), 1, 15, 0));
-									xButtons[i].setIcon(beforeX);
-									chosenAnsNum.clear();
-									chosenAnsNum.add(String.valueOf(i));
-									click[i] = true;
-								} else {
-									answerButtons.get(i).setBorder(new BubbleBorder(Color.decode("#F8EFD4"), 1, 15, 0));
-									chosenAnsNum.remove(String.valueOf(i));
-									click[i] = false;
-								}
-							} else {
-								answerButtons.get(i).setBorder(new BubbleBorder(Color.decode("#F8EFD4"), 1, 15, 0));
-							}
-						} else {
-							if (answerButtons.get(i).getModel().isArmed()) {
-								if (click[i] == false) {
-									answerButtons.get(i).setBorder(new BubbleBorder(Color.decode("#5E8CD1"), 1, 15, 0));
-									xButtons[i].setIcon(beforeX);
-									chosenAnsNum.add(String.valueOf(i));
-									Collections.sort(chosenAnsNum);
-									click[i] = true;
-								} else {
-									answerButtons.get(i).setBorder(new BubbleBorder(Color.decode("#F8EFD4"), 1, 15, 0));
-									chosenAnsNum.remove(String.valueOf(i));
-									click[i] = false;
-								}
-							}
-						}
-					}
-					// System.out.println(chosenAnsNum);
-				}
-			}
-			Ans_ClickListener ansListener = new Ans_ClickListener();
-			for (JButton b : answerButtons) {
-				b.addActionListener(ansListener);
-			}
 		} catch (Exception e) {
-			System.out.printf("create answer comp %s\n", e.getMessage());
+			System.out.printf("<Answer> update answer comp %s\n", e.getMessage());
 		}
-
 	}
 
-	public void createAnswerComp() {
-		createAnswerButton();
-		createXButton();
-		answerLabel = new JLabel[option];
-		for (int i = 0; i < option; i++) {
-			answerLabel[i] = new JLabel();
-			answerLabel[i].setBorder(null);
-			answerLabel[i].setFont(new Font("微軟正黑體", Font.PLAIN, 16));
-		}
-		answerLabel[0].setText("A.");
-		answerLabel[1].setText("B.");
-		answerLabel[2].setText("C.");
-		answerLabel[3].setText("D.");
-		if (option == 5) {
-			answerLabel[4].setText("E.");
-		}
-
+	public void createAnswerPanel() {
 		answerPanel = new JPanel(new GridBagLayout());
 		answerPanel.setBackground(Color.decode("#F8EFD4"));
 		GridBagConstraints gbc;
-		for (int i = 0; i < option; i++) {
+		for (int i = 0; i < 5; i++) {
 			gbc = new GridBagConstraints();
 			gbc.gridx = 0;
 			gbc.gridy = i;
@@ -504,15 +644,18 @@ public class QuestionPanel extends JPanel {
 		}
 	}
 
-	public void createQToolPanel() {
-		moreButton = qTool.createMoreButton();
-		playButton = qTool.createPlayButton(this);
-		pauseButton = qTool.createPauseButton(this);
-		timeLabel = qTool.createTimer();
-		finishButton = qTool.createFinishButton();
-		
+	public void createToolPanel() {
+		moreButton = qTool.getMoreButton();
+		playButton = qTool.getPlayButton();
+		pauseButton = qTool.getPauseButton();
+		timeLabel = qTool.getTimeLabel();
+		finishButton = qTool.getFinishButton();
+
 		up_toolPanel = new JPanel();
 		up_toolPanel.setBackground(Color.decode("#F8EFD4"));
+		down_toolPanel = new JPanel();
+		down_toolPanel.setBackground(Color.decode("#F8EFD4"));
+
 		up_toolPanel.setLayout(new BoxLayout(up_toolPanel, BoxLayout.X_AXIS));
 		up_toolPanel.add(Box.createRigidArea(new Dimension(20, 0)));
 		up_toolPanel.add(moreButton);
@@ -524,8 +667,6 @@ public class QuestionPanel extends JPanel {
 		up_toolPanel.add(timeLabel);
 		up_toolPanel.add(Box.createRigidArea(new Dimension(30, 0)));
 
-		down_toolPanel = new JPanel();
-		down_toolPanel.setBackground(Color.decode("#F8EFD4"));
 		down_toolPanel.setLayout(new BoxLayout(down_toolPanel, BoxLayout.X_AXIS));
 		down_toolPanel.add(Box.createRigidArea(new Dimension(30, 0)));
 		down_toolPanel.add(backButton);
@@ -534,7 +675,6 @@ public class QuestionPanel extends JPanel {
 		down_toolPanel.add(Box.createGlue());
 		down_toolPanel.add(nextButton);
 		down_toolPanel.add(Box.createRigidArea(new Dimension(30, 0)));
-		
 	}
 
 	public void setQuestionLayout() {
@@ -550,15 +690,8 @@ public class QuestionPanel extends JPanel {
 		add(down_toolPanel);
 		add(Box.createRigidArea(new Dimension(0, 10)));
 	}
-	
+
 	public void setPauseLayout() {
-		JPanel pausePanel = new JPanel(new BorderLayout());
-		pausePanel.setBackground(Color.decode("#F8EFD4"));
-		ImageIcon pauseIcon = new ImageIcon(
-				new ImageIcon("images/rest.png").getImage().getScaledInstance(500, 500, Image.SCALE_DEFAULT));
-		JLabel pauseLabel = new JLabel(pauseIcon);
-		pausePanel.add(pauseLabel, BorderLayout.CENTER);
-		
 		removeAll();
 		setBackground(Color.decode("#F8EFD4"));
 		setLayout(new BoxLayout(this, BoxLayout.PAGE_AXIS));
@@ -569,76 +702,38 @@ public class QuestionPanel extends JPanel {
 		validate();
 		repaint();
 	}
-	
-	public void createButtons() {
-		size = 0;
-		String server = "jdbc:mysql://140.119.19.73:9306/";
-		String database = "MG05";
-		String url = server + database;
-		String username = "MG05";
-		String password = "9mMuzQ";
-		try {
-			Connection conn = DriverManager.getConnection(url, username, password);
-			Statement stat = conn.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
-			String query = "SELECT COUNT(*) FROM " + test + " WHERE Number <> 0";
-			String query2 = "SELECT Number FROM " + test + " WHERE Number <> 0";
 
-			ResultSet result = stat.executeQuery(query);
-			result.next();
-			size = Integer.parseInt(result.getString(1));
-			result.close();
+	public void createQNumButtons() {
+		numButtons = new RoundButton[numbers.size()];
+		int row;
+		if ((numbers.size() % 10) == 0) {
+			row = numbers.size() / 10;
+		} else {
+			row = numbers.size() / 10 + 1;
+		}
+		GridLayout gridLayout = new GridLayout(row, 10);
+		gridLayout.setHgap(30);
+		gridLayout.setVgap(30);
+		buttonPanel = new JPanel(gridLayout);
+		buttonPanel.setPreferredSize(new Dimension(1000, 500));
+		buttonPanel.setBackground(Color.decode("#F8EFD4"));
 
-			ResultSet result2 = stat.executeQuery(query2);
-			numButtons = new RoundButton[size];
-			GridLayout gridLayout = new GridLayout(5, 10); // what if number > 50?
-			gridLayout.setHgap(30);
-			gridLayout.setVgap(30);
-			buttonPanel = new JPanel(gridLayout);
-			buttonPanel.setPreferredSize(new Dimension(1000, 500));
-			buttonPanel.setBackground(Color.decode("#F8EFD4"));
-			for (int i = 0; i < size; i++) {
-				result2.next();
-				numButtons[i] = new RoundButton(String.format("%d", result2.getInt(1)));
-				numButtons[i].setPreferredSize(new Dimension(20, 20));
-				numButtons[i].setFont(new Font("微軟正黑體", Font.PLAIN, 14));
-				buttonPanel.add(numButtons[i]);
-			}
-
-			result2.close();
-		} catch (SQLException e) {
-			System.out.println(e.getMessage());
+		for (int i = 0; i < numbers.size(); i++) {
+			numButtons[i] = new RoundButton(String.format("%d", numbers.get(i)));
+			numButtons[i].setPreferredSize(new Dimension(20, 20));
+			numButtons[i].setFont(new Font("微軟正黑體", Font.PLAIN, 14));
+			buttonPanel.add(numButtons[i]);
 		}
 	}
 
-	public void addQNumListener(JPanel panel, QuestionPanel questionPanel) {
-		class ClickListener implements ActionListener {
-			CardLayout cardLayout = (CardLayout) (panel.getLayout());
-
-			public void actionPerformed(ActionEvent e) {
-				for (int i = 0; i < numButtons.length; i++) {
-					if (numButtons[i].getModel().isArmed()) {
-						questionPanel.updateNumber(i + 1);
-						questionPanel.repaintQuestionPanel();
-					}
-				}
-				cardLayout.show(panel, "questionPanel");
-			}
-		}
-		
-		ClickListener listener = new ClickListener();
-		for (int i = 0; i < numButtons.length; i++) {
-			numButtons[i].addActionListener(listener);
-		}
-	}
-	
-	public void repaintToolPanel() {
+	public void repaintNumBtnPanel() {
 		removeAll();
-		setToolLayout();
+		setNumBtnLayout();
 		validate();
 		repaint();
 	}
 
-	public void setToolLayout() {
+	public void setNumBtnLayout() {
 		setLayout(new GridBagLayout());
 		setBackground(Color.decode("#F8EFD4"));
 		GridBagConstraints gbc = new GridBagConstraints();
@@ -656,19 +751,8 @@ public class QuestionPanel extends JPanel {
 		gbc.gridy = 1;
 		gbc.weightx = 1.0;
 		gbc.weighty = 1.0;
-		gbc.insets = new Insets(0, 50, 0, 50);
+		gbc.insets = new Insets(0, 50, 150, 50);
 		gbc.anchor = GridBagConstraints.CENTER;
-		gbc.fill = GridBagConstraints.BOTH;
 		add(buttonPanel, gbc);
-
-		gbc = new GridBagConstraints();
-		gbc.gridx = 0;
-		gbc.gridy = 2;
-		gbc.weightx = 1.0;
-		gbc.weighty = 1.0;
-		gbc.insets = new Insets(20, 0, 10, 0);
-		gbc.fill = GridBagConstraints.HORIZONTAL;
-		gbc.anchor = GridBagConstraints.SOUTH;
-		add(finishButton, gbc);
 	}
 }

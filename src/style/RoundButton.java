@@ -73,12 +73,25 @@ public class RoundButton extends JButton {
 
 		super.paintComponent(g);
 	}
+	
+	public void setBgColor(Color background, Color bgClicked) {
+		this.background = background;
+		this.bgClicked = bgClicked;
+		paintComponent(this.getGraphics());
+	}
 
 	protected void paintBorder(Graphics g) {
 		Graphics2D g2 = (Graphics2D) g;
         g2.setStroke(new BasicStroke(thickness));
         g2.setColor(border);
 		g2.drawOval(broken, broken, getSize().width - 1, getSize().height - 1);
+	}
+	
+	public void setBorderColor(Color border, Color bgClicked) {
+		this.border = border;
+		this.bgClicked = bgClicked;
+		paintBorder(this.getGraphics());
+		paintComponent(this.getGraphics());
 	}
 
 	// Hit detection.
